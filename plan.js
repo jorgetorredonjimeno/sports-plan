@@ -1,6 +1,6 @@
 // Genera el plan de cada día a partir de las respuestas de bienvenida (config/perfil).
 (function () {
-  const TIPOS = { descanso: 'Descanso', correr: 'Correr', largo: 'Tirada larga', gym: 'Gym', padel: 'Pádel' };
+  const TIPOS = { descanso: 'Descanso', correr: 'Correr', largo: 'Tirada larga', gym: 'Gym', padel: 'Pádel', bici: 'Bici' };
   function perfil() {
     try { const s = JSON.parse(localStorage.getItem('jdb')) || {}; return s['config/perfil'] || null; } catch (e) { return null; }
   }
@@ -23,6 +23,7 @@
       t = { plan: 'Tirada larga ' + l + ' km', km_plan: l, detalle: r ? 'Suave, ' + ritmoMas(r, 15) + '–' + ritmoMas(r, 30) + '/km' : 'Suave, más lento que tus rodajes' };
     }
     else if (tipo === 'gym') t = { plan: 'Gym fuerza y core', min_plan: 45, detalle: 'Rutina de la pestaña Gym · 3×8–12' };
+    else if (tipo === 'bici') t = { plan: 'Bici 45 min', min_plan: 45, detalle: 'Ritmo cómodo, sin impacto' };
     else if (tipo === 'padel') t = { plan: 'Pádel', min_plan: 60, detalle: 'Calienta 10 min antes' };
     else t = wd === 0 ? { plan: 'Descanso activo', detalle: 'Caminar o bici tranquila · pésate en ayunas' } : { plan: 'Descanso', detalle: 'Caminar 20–30 min' };
     return Object.assign(base, { tipo }, t);

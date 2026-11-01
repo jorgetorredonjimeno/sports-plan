@@ -164,6 +164,7 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0
   <section class="stats" id="v-stats" aria-label="Resumen del mes">
     <div class="stat"><div class="k">Km corridos</div><div class="v"><span id="s-km">–</span><small>km</small></div><div class="d">Plan del mes: <span id="s-kmplan">–</span> km</div><div class="bar"><i id="b-km"></i></div></div>
     <div class="stat"><div class="k">Gym</div><div class="v"><span id="s-gym">–</span><small>h</small></div><div class="d"><span id="s-gymses">–</span> sesiones</div></div>
+    <div class="stat"><div class="k">Bici</div><div class="v"><span id="s-bici">–</span><small>h</small></div><div class="d"><span id="s-bicikm">–</span> km</div></div>
     <div class="stat"><div class="k">Pádel</div><div class="v"><span id="s-padel">–</span><small>h</small></div><div class="d">Extras del mes: <span id="s-extras">–</span></div></div>
     <div class="stat"><div class="k">Pasos al día</div><div class="v"><span id="s-pasos">–</span></div><div class="d"><span id="s-10k">–</span> días con 10.000</div></div>
     <div class="stat"><div class="k">Cumplido</div><div class="v"><span id="s-cumpl">–</span><small>%</small></div><div class="d">Racha: <span id="s-racha">–</span> días</div></div>
@@ -179,9 +180,9 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0
         <div class="chart" id="ch-meses"></div>
       </div>
       <div class="panel">
-        <h2>Gym y pádel por mes</h2>
+        <h2>Gym, pádel y bici por mes</h2>
         <p class="note">Horas de cada mes.</p>
-        <div class="legend"><span><i style="background: var(--accent)"></i>Gym</span><span><i style="background: var(--warn)"></i>Pádel</span></div>
+        <div class="legend"><span><i style="background: var(--accent)"></i>Gym</span><span><i style="background: var(--warn)"></i>Pádel</span><span><i style="background: #5b7fd6"></i>Bici</span></div>
         <div class="chart" id="ch-horas"></div>
       </div>
     </div>
@@ -199,7 +200,7 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0
     <div class="panel" style="margin-top: 12px">
       <h2>Mes a mes</h2>
       <div class="tblwrap"><table class="tbl" id="tbl-meses">
-        <thead><tr><th>Mes</th><th>Km</th><th>Plan</th><th>Gym h</th><th>Pádel h</th><th>Pasos/día</th><th>Días 10k</th><th>Cumplido</th><th>Dolor máx</th><th>Peso</th></tr></thead>
+        <thead><tr><th>Mes</th><th>Km</th><th>Plan</th><th>Gym h</th><th>Pádel h</th><th>Bici h</th><th>Pasos/día</th><th>Días 10k</th><th>Cumplido</th><th>Dolor máx</th><th>Peso</th></tr></thead>
         <tbody></tbody>
       </table></div>
     </div>
@@ -257,7 +258,7 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0
 (function () {
   const META_PASOS = 10000, LIMITE_DOLOR = 4;
   const DW = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
-  const TAG = { correr: 'Correr', largo: 'Largo', padel: 'Pádel', gym: 'Gym', descanso: 'Descanso' };
+  const TAG = { correr: 'Correr', largo: 'Largo', padel: 'Pádel', gym: 'Gym', bici: 'Bici', descanso: 'Descanso' };
   let days = [], all = [], ejs = [], tab = null, db = null, readOnly = false;
   const MONTH = (m) => new Date(m + '-15T12:00:00').toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
   const MSHORT = (m) => new Date(m + '-15T12:00:00').toLocaleDateString('es-ES', { month: 'short' }).replace('.', '');
@@ -276,15 +277,17 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0
   }
 
   function summary(list = days) {
-    const s = { km: 0, kmPlan: 0, gymMin: 0, gymSes: 0, padelMin: 0, nExtra: 0, pasos: [], k10: 0, done: 0, past: 0, dolor: null, racha: 0, peso: null };
+    const s = { km: 0, kmPlan: 0, gymMin: 0, gymSes: 0, padelMin: 0, biciMin: 0, biciKm: 0, nExtra: 0, pasos: [], k10: 0, done: 0, past: 0, dolor: null, racha: 0, peso: null };
     list.forEach((d) => {
       if (d.peso != null) s.peso = d.peso;
       if (d.km != null) s.km += d.km;
       if (d.tipo === 'padel' && d.hecho === true) s.padelMin += d.min ?? 0;
+      if (d.tipo === 'bici' && d.hecho === true) { s.biciMin += d.min ?? 0; s.biciKm += d.bkm ?? 0; }
       (d.extras || []).forEach((e) => { s.nExtra++;
         if (e.tipo === 'correr') s.km += e.km ?? 0;
         if (e.tipo === 'gym') { s.gymSes++; s.gymMin += e.min ?? 0; }
-        if (e.tipo === 'padel') s.padelMin += e.min ?? 0; });
+        if (e.tipo === 'padel') s.padelMin += e.min ?? 0;
+        if (e.tipo === 'bici') s.biciMin += e.min ?? 0; });
       if (d.km_plan != null) s.kmPlan += d.km_plan;
       if (d.tipo === 'gym' && d.hecho === true) { s.gymSes++; s.gymMin += d.min ?? 0; }
       if (d.pasos != null) { s.pasos.push(d.pasos); if (d.pasos >= META_PASOS) s.k10++; }
@@ -306,6 +309,7 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0
     $('b-km').style.width = Math.min(100, s.kmPlan ? s.km / s.kmPlan * 100 : 0) + '%';
     $('s-gym').textContent = nf(s.gymMin / 60); $('s-gymses').textContent = s.gymSes;
     $('s-padel').textContent = nf(s.padelMin / 60); $('s-extras').textContent = s.nExtra;
+    $('s-bici').textContent = nf(s.biciMin / 60); $('s-bicikm').textContent = nf(s.biciKm);
     $('s-pasos').textContent = s.pasos.length ? nf(Math.round(s.pasos.reduce((a, b) => a + b, 0) / s.pasos.length), 0) : '–';
     $('s-10k').textContent = s.k10;
     $('s-cumpl').textContent = s.past ? Math.round(s.done / s.past * 100) : '–';
@@ -366,6 +370,7 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0
     return ({
       correr: { tipo, plan: '8 km cómodo', detalle: '6:00–6:20/km', km_plan: 8, min_plan: null },
       largo: { tipo, plan: 'Tirada larga ' + (largoSemana ?? 8) + ' km', detalle: 'Suave, 6:15–6:30/km', km_plan: largoSemana ?? 8, min_plan: null },
+      bici: { tipo, plan: 'Bici suave', detalle: 'Sin impacto, ritmo cómodo', km_plan: null, min_plan: 45 },
       padel: { tipo, plan: 'Pádel con cautela', detalle: 'Si la espalda se resiente: caminar rápido o bici', km_plan: null, min_plan: 60 },
       gym: { tipo, plan: 'Gym espalda y core', detalle: 'Bird dog, dead bug, plancha lateral, puente, zancada estática, remo con pecho apoyado, gemelos · 3×8–12', km_plan: null, min_plan: 45 },
       descanso: { tipo, plan: 'Descanso', detalle: 'Caminar 20–30 min', km_plan: null, min_plan: null }
@@ -387,7 +392,7 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0
     });
     return w;
   }
-  const EXTRA = { correr: { name: 'Correr', km: 5, min: null }, gym: { name: 'Gym', km: null, min: 45 }, padel: { name: 'Pádel', km: null, min: 60 } };
+  const EXTRA = { correr: { name: 'Correr', km: 5, min: null }, gym: { name: 'Gym', km: null, min: 45 }, padel: { name: 'Pádel', km: null, min: 60 }, bici: { name: 'Bici', km: null, min: 45 } };
   function extraRow(d, idx) {
     const e = d.extras[idx], isKm = e.tipo === 'correr', key = isKm ? 'km' : 'min', inc = isKm ? 1 : 5;
     const row = document.createElement('div'); row.className = 'extra';
@@ -498,7 +503,7 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0
         b.addEventListener('click', () => {
           const next = d.hecho === val ? null : val; const patch = { hecho: next };
           if (next === true && (d.tipo === 'correr' || d.tipo === 'largo') && d.km == null && d.km_plan != null) patch.km = d.km_plan;
-          if (next === true && (d.tipo === 'gym' || d.tipo === 'padel') && d.min == null) patch.min = d.min_plan ?? 45;
+          if (next === true && (d.tipo === 'gym' || d.tipo === 'padel' || d.tipo === 'bici') && d.min == null) patch.min = d.min_plan ?? 45;
           save(d.id, patch);
         });
         ch.appendChild(b);
@@ -506,7 +511,8 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0
       top.append(dt, wh, ch);
       const fs = document.createElement('div'); fs.className = 'fields';
       if (d.tipo === 'correr' || d.tipo === 'largo') { fs.appendChild(stepper(d, 'km', 'Km hechos', 1, d.km_plan, 'km_plan')); fs.appendChild(shoePicker(d.zapa, d.id, (z) => save(d.id, { zapa: z }))); }
-      if (d.tipo === 'gym' || d.tipo === 'padel') fs.appendChild(stepper(d, 'min', 'Minutos', 5, d.min_plan ?? 45, 'min_plan'));
+      if (d.tipo === 'gym' || d.tipo === 'padel' || d.tipo === 'bici') fs.appendChild(stepper(d, 'min', 'Minutos', 5, d.min_plan ?? 45, 'min_plan'));
+      if (d.tipo === 'bici') fs.appendChild(field(d, 'bkm', 'Km bici', 0.1, ''));
       fs.appendChild(field(d, 'pasos', 'Pasos', 100, '10000'));
       fs.appendChild(field(d, 'dolor', 'Dolor 0–10', 1, '0'));
       if (d.tipo === 'descanso' && new Date(d.fecha + 'T12:00:00').getDay() === 0) fs.appendChild(field(d, 'peso', 'Peso kg', 0.1, ''));
@@ -638,13 +644,13 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0
   function renderGeneral() {
     renderShoes();
     const rows = months().map((m) => { const s = summary(all.filter((d) => d.fecha.startsWith(m)));
-      return { m, label: MSHORT(m), km: Math.round(s.km * 10) / 10, plan: s.kmPlan, gym: Math.round(s.gymMin / 6) / 10, padel: Math.round(s.padelMin / 6) / 10, s }; });
+      return { m, label: MSHORT(m), km: Math.round(s.km * 10) / 10, plan: s.kmPlan, gym: Math.round(s.gymMin / 6) / 10, padel: Math.round(s.padelMin / 6) / 10, bici: Math.round(s.biciMin / 6) / 10, s }; });
     barsChart($('ch-meses'), rows, [{ key: 'plan', color: 'var(--plan)' }, { key: 'km', color: 'var(--accent)' }], 'km');
-    barsChart($('ch-horas'), rows, [{ key: 'gym', color: 'var(--accent)' }, { key: 'padel', color: 'var(--warn)' }], 'h');
+    barsChart($('ch-horas'), rows, [{ key: 'gym', color: 'var(--accent)' }, { key: 'padel', color: 'var(--warn)' }, { key: 'bici', color: '#5b7fd6' }], 'h');
     const tb = $('tbl-meses').tBodies[0]; tb.replaceChildren();
     const curM = todayStr.slice(0, 7);
     rows.forEach((r) => { const s = r.s; const tr = document.createElement('tr'); if (r.m === curM) tr.className = 'cur';
-      [MONTH(r.m), nf(r.km), nf(r.plan), nf(r.gym), nf(r.padel),
+      [MONTH(r.m), nf(r.km), nf(r.plan), nf(r.gym), nf(r.padel), nf(r.bici),
        s.pasos.length ? nf(Math.round(s.pasos.reduce((a, b) => a + b, 0) / s.pasos.length), 0) : '–', String(s.k10),
        s.past ? Math.round(s.done / s.past * 100) + '%' : '–', s.dolor == null ? '–' : nf(s.dolor), s.peso == null ? '–' : nf(s.peso)]
         .forEach((v) => { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); });
@@ -708,7 +714,7 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0
     db.collection('dias').onSnapshot((snap) => {
       all = snap.docs.map((s) => { const v = s.data() || {}; return { id: s.id, fecha: v.fecha, tipo: v.tipo, plan: v.plan, detalle: v.detalle, semana: v.semana,
         km_plan: num(v.km_plan), min_plan: num(v.min_plan), hecho: v.hecho === true ? true : v.hecho === false ? false : null,
-        zapa: typeof v.zapa === 'string' ? v.zapa : null, km: num(v.km), min: num(v.min), pasos: num(v.pasos), dolor: num(v.dolor), peso: num(v.peso),
+        zapa: typeof v.zapa === 'string' ? v.zapa : null, km: num(v.km), min: num(v.min), pasos: num(v.pasos), bkm: num(v.bkm), dolor: num(v.dolor), peso: num(v.peso),
         extras: Array.isArray(v.extras) ? v.extras.filter((e) => e && e.tipo).map((e) => ({ tipo: String(e.tipo), km: num(e.km), min: num(e.min), zapa: typeof e.zapa === 'string' ? e.zapa : null })) : [] }; })
         .filter((d) => d.fecha).sort((a, b) => a.fecha < b.fecha ? -1 : 1);
       const ms = tabMonths();
