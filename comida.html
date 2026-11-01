@@ -136,7 +136,8 @@ details.why ul{margin:10px 0 0;padding-left:18px;display:flex;flex-direction:col
 <header class="top">
   <div class="wrap">
     <div>
-      <h1>Despensa de Jorge</h1>
+      <h1 id="dtitle">Despensa de Jorge</h1>
+      <script>try{const p=(JSON.parse(localStorage.getItem('jdb'))||{})['config/perfil'];if(p&&p.nombre)document.getElementById('dtitle').textContent='Despensa de '+p.nombre}catch(e){}</script>
       <p class="sub">Marca lo que te gusta y sale una semana de comidas para perder grasa sin perder piernas.</p>
     </div>
     <nav class="tabs" aria-label="Secciones">

@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="es"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sports Plan · Bienvenida</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0e7c66">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sports Plan">
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+</head><body>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Figtree:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#f4f6f5;--panel:#fff;--fg:#17201d;--muted:#5d6a65;--line:#dbe2df;--accent:#0e7c66;--accent-soft:#d6efe8;--bad:#c8382b}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0f1513;--panel:#18201d;--fg:#e7eeeb;--muted:#95a39e;--line:#2a3531;--accent:#3cc3a2;--accent-soft:#163a31;--bad:#ff6b5e;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1513;--panel:#18201d;--fg:#e7eeeb;--muted:#95a39e;--line:#2a3531;--accent:#3cc3a2;--accent-soft:#163a31;--bad:#ff6b5e;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 "Figtree",system-ui,-apple-system,sans-serif}
+.wrap{max-width:40rem;margin:0 auto;padding:24px max(16px,env(safe-area-inset-left,0px)) 40px;display:grid;gap:14px}
+h1{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:700;font-size:2.6rem;line-height:1;margin:0;text-transform:uppercase}
+h2{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:600;font-size:1.3rem;margin:0 0 4px;text-transform:uppercase;letter-spacing:.03em;display:flex;gap:10px;align-items:center}
+h2 .n{display:inline-grid;place-items:center;width:1.6rem;height:1.6rem;border-radius:50%;background:var(--accent);color:var(--bg);font-size:1rem}
+.sub{color:var(--muted);margin:6px 0 0}
+.hint{color:var(--muted);font-size:.85rem;margin:0 0 10px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:10px}
+label.f{display:grid;gap:4px;font-weight:600;font-size:.9rem}
+label.f small{font-weight:400;color:var(--muted)}
+input,select{font:500 1rem "Figtree",system-ui,sans-serif;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);width:100%;min-width:0}
+input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.week{display:grid;gap:8px}
+.wd{display:grid;grid-template-columns:5.5rem 1fr;gap:10px;align-items:center}
+.wd span{font-weight:600}
+.shoe{display:grid;grid-template-columns:1fr 3.2rem 2.6rem;gap:8px;align-items:center}
+.shoe input[type=color]{padding:2px;height:44px;cursor:pointer}
+.x{height:44px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--muted);font-size:1.1rem;cursor:pointer}
+.btn{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:12px;padding:14px 20px;font:600 1.05rem "Figtree",system-ui,sans-serif;cursor:pointer;background:var(--accent);color:var(--bg);min-height:48px;width:100%}
+.btn.ghost{background:transparent;color:var(--accent);border:1.5px dashed var(--accent);font-size:.95rem;padding:10px;min-height:44px}
+.err{color:var(--bad);font-size:.9rem;min-height:1.2em;margin:0}
+.restore{text-align:center;font-size:.9rem;color:var(--muted)}
+.restore a{color:var(--accent);font-weight:600}
+</style>
+<form class="wrap" id="f" novalidate>
+  <header>
+    <h1>Bienvenido a Sports Plan</h1>
+    <p class="sub">Contesta estas preguntas y te preparo el plan de entreno del mes. Luego puedes cambiar cualquier día.</p>
+  </header>
+
+  <section class="panel">
+    <h2><span class="n">1</span>Sobre ti</h2>
+    <label class="f">¿Cómo te llamas?<input id="nombre" type="text" maxlength="20" autocomplete="given-name" required></label>
+    <label class="f">Peso actual <small>en kg, opcional</small><input id="peso" type="number" inputmode="decimal" min="30" max="250" step="0.1"></label>
+  </section>
+
+  <section class="panel">
+    <h2><span class="n">2</span>Correr</h2>
+    <div class="two">
+      <label class="f">Km que corres cómodo hoy<input id="km" type="number" inputmode="numeric" min="1" max="42" step="1" value="5"></label>
+      <label class="f">Ritmo cómodo <small>min/km, opcional</small><input id="ritmo" type="text" inputmode="numeric" placeholder="6:00" maxlength="5" pattern="\d{1,2}:\d{2}"></label>
+    </div>
+    <label class="f">¿Hasta cuántos km quieres llegar en la tirada larga?<input id="largo" type="number" inputmode="numeric" min="1" max="42" step="1" value="12"></label>
+    <p class="hint">La tirada larga empieza en tus km de hoy y sube 1 km cada 2 semanas.</p>
+  </section>
+
+  <section class="panel">
+    <h2><span class="n">3</span>Tu semana</h2>
+    <p class="hint">Elige qué haces cada día. Si no corres, deja esos días en Descanso u otro deporte.</p>
+    <div class="week" id="week"></div>
+  </section>
+
+  <section class="panel">
+    <h2><span class="n">4</span>Zapatillas</h2>
+    <p class="hint">Ponles un nombre y un color para contar los km de cada par. Opcional.</p>
+    <div id="shoes" style="display:grid;gap:8px"></div>
+    <button class="btn ghost" type="button" id="addShoe">+ Añadir otro par</button>
+  </section>
+
+  <p class="err" id="err" role="alert"></p>
+  <button class="btn" type="submit" id="go">Crear mi plan</button>
+  <p class="restore">¿Ya usabas la app en otro móvil? <a href="copia.html">Recupera tu copia</a></p>
+</form>
+<script src="seed.js"></script>
+<script src="plan.js"></script>
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const DIAS=[[1,'Lunes'],[2,'Martes'],[3,'Miércoles'],[4,'Jueves'],[5,'Viernes'],[6,'Sábado'],[0,'Domingo']];
+  const DEF={1:'correr',2:'padel',3:'descanso',4:'gym',5:'descanso',6:'largo',0:'descanso'};
+  DIAS.forEach(([n,name])=>{
+    const row=document.createElement('label');row.className='wd';
+    const s=document.createElement('span');s.textContent=name;
+    const sel=document.createElement('select');sel.id='d'+n;sel.setAttribute('aria-label','Actividad del '+name.toLowerCase());
+    Object.entries(SP.TIPOS).forEach(([k,v])=>sel.appendChild(new Option(v,k,false,DEF[n]===k)));
+    row.append(s,sel);$('week').appendChild(row);
+  });
+  const COLORS=['#1d1d1f','#2f9e5b','#e4572e','#2b6cb0','#f2c94c','#ffffff'];let ns=0;
+  function addShoe(){
+    const i=ns++;const r=document.createElement('div');r.className='shoe';
+    r.innerHTML='<input type="text" maxlength="20" placeholder="Nombre, p. ej. Rojas" aria-label="Nombre de las zapatillas" id="zn'+i+'"><input type="color" value="'+COLORS[i%COLORS.length]+'" aria-label="Color" id="zc'+i+'"><button type="button" class="x" aria-label="Quitar">×</button>';
+    r.querySelector('.x').onclick=()=>r.remove();$('shoes').appendChild(r);
+  }
+  addShoe();$('addShoe').onclick=()=>{addShoe();$('shoes').lastElementChild.querySelector('input').focus()};
+
+  const ymd=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  $('f').onsubmit=e=>{
+    e.preventDefault();$('err').textContent='';
+    const nombre=$('nombre').value.trim();
+    if(!nombre){$('err').textContent='Escribe tu nombre.';$('nombre').focus();return}
+    const ritmo=$('ritmo').value.trim();
+    if(ritmo&&!/^\d{1,2}:\d{2}$/.test(ritmo)){$('err').textContent='Escribe el ritmo así: 6:00';$('ritmo').focus();return}
+    const kmBase=Math.max(1,Math.round(Number($('km').value)||5)),largoMax=Math.max(kmBase,Math.round(Number($('largo').value)||kmBase));
+    const peso=Number($('peso').value)||null;
+    const semana={};DIAS.forEach(([n])=>semana[n]=$('d'+n).value);
+    const hoy=new Date();hoy.setHours(12,0,0,0);
+    const ini=new Date(hoy);const wd=ini.getDay();if(wd!==1)ini.setDate(ini.getDate()+((8-wd)%7));
+    const p={nombre,peso,kmBase,ritmo:ritmo||null,largoMax,semana,inicio:ymd(ini),creado:ymd(hoy)};
+    const store=Object.assign({},window.SEED||{});
+    store['config/perfil']=p;
+    const zapas=[...$('shoes').children].map(r=>{const n=r.querySelector('input[type=text]').value.trim();if(!n)return null;
+      return{id:n.toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,20)+'-'+Math.random().toString(36).slice(2,6),name:n,color:r.querySelector('input[type=color]').value,km_inicio:0}}).filter(Boolean);
+    store['config/zapatillas']={lista:zapas};
+    // mes actual y el siguiente
+    for(let k=0;k<2;k++){
+      const y=hoy.getFullYear(),m=hoy.getMonth()+k,n=new Date(y,m+1,0).getDate();
+      for(let d=1;d<=n;d++){const f=ymd(new Date(y,m,d,12));store['dias/'+f]=SP.planDoc(f,p)}
+    }
+    if(peso)store['dias/'+ymd(hoy)].peso=peso;
+    try{localStorage.setItem('jdb',JSON.stringify(store));localStorage.removeItem('tab')}catch(e){$('err').textContent='No se ha podido guardar en este móvil.';return}
+    location.replace('index.html');
+  };
+})();
+</script>
+</body></html>

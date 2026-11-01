@@ -53,6 +53,12 @@ p{margin:0 0 10px}.muted{color:var(--muted);font-size:.9rem}
     <div class="conf" id="conf"><p id="conf-t"></p><div class="row"><button class="btn danger" id="ok" type="button">Sí, recuperar</button><button class="btn ghost" id="no" type="button">Cancelar</button></div></div>
     <p class="msg" id="m2" role="status"></p>
   </section>
+  <section class="panel">
+    <h2>Empezar de cero</h2>
+    <p>Borra todo lo de este móvil y vuelve a las preguntas de bienvenida. Útil si la app la va a usar otra persona. Guarda antes una copia si la quieres conservar.</p>
+    <div class="row"><button class="btn ghost" id="reset" type="button">Empezar de cero</button></div>
+    <div class="conf" id="conf2"><p>¿Seguro? Se borran tus días, km, zapatillas, gustos y menú de este móvil.</p><div class="row"><button class="btn danger" id="ok2" type="button">Sí, borrar todo</button><button class="btn ghost" id="no2" type="button">Cancelar</button></div></div>
+  </section>
 </div>
 <script>
 (function(){
@@ -79,6 +85,9 @@ p{margin:0 0 10px}.muted{color:var(--muted);font-size:.9rem}
   $('no').onclick=()=>{pending=null;$('conf').classList.remove('on')};
   $('ok').onclick=()=>{if(!pending)return;try{KEYS.forEach(k=>localStorage.removeItem(k));Object.entries(pending.datos).forEach(([k,v])=>{if(KEYS.includes(k))localStorage.setItem(k,v)});
       $('conf').classList.remove('on');$('m2').className='msg ok';$('m2').textContent='Copia recuperada. Ya puedes ir a Entreno o Comida.';}catch(e){$('m2').className='msg bad';$('m2').textContent='No se ha podido recuperar.'}pending=null};
+  $('reset').onclick=()=>{$('conf2').classList.add('on');$('ok2').focus()};
+  $('no2').onclick=()=>$('conf2').classList.remove('on');
+  $('ok2').onclick=()=>{try{KEYS.forEach(k=>localStorage.removeItem(k))}catch(e){}location.replace('bienvenida.html')};
 })();
 </script>
 <link rel="stylesheet" href="app.css">
