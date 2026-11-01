@@ -149,6 +149,11 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0
 .foot { font-size: .8rem; color: var(--muted); }
 .saved { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--fg); color: var(--bg); padding: 8px 14px; border-radius: 99px; font-size: .85rem; opacity: 0; transition: opacity .2s; pointer-events: none; }
 .saved.on { opacity: 1; }
+.pesoav { display: grid; gap: 10px; border-color: var(--accent); background: var(--accent-soft); }
+.pesorow { display: flex; gap: 8px; }
+.pesorow input { flex: 1; min-width: 0; font: 500 1.05rem var(--body); padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); }
+.pesorow button { border: 0; border-radius: 10px; background: var(--accent); color: var(--bg); font: 600 1rem var(--body); padding: 10px 16px; cursor: pointer; }
+.pesorow input:focus-visible, .pesorow button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .bar i, .saved { transition: none; } }
 </style>
 
@@ -160,6 +165,10 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0
   </header>
 
   <div id="alerta" class="alert" hidden></div>
+  <form id="pesoAviso" class="panel pesoav" hidden>
+    <div><b>⚖️ Toca pesarte</b><div class="note" style="margin:2px 0 0">Cada domingo, en ayunas y después de ir al baño. Así comparamos semana a semana.</div></div>
+    <div class="pesorow"><input id="pesoHoy" type="number" inputmode="decimal" min="30" max="250" step="0.1" placeholder="kg" aria-label="Peso en kg"><button type="submit">Guardar</button></div>
+  </form>
 
   <section class="stats" id="v-stats" aria-label="Resumen del mes">
     <div class="stat"><div class="k">Km corridos</div><div class="v"><span id="s-km">–</span><small>km</small></div><div class="d">Plan del mes: <span id="s-kmplan">–</span> km</div><div class="bar"><i id="b-km"></i></div></div>
@@ -185,6 +194,11 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0
         <div class="legend"><span><i style="background: var(--accent)"></i>Gym</span><span><i style="background: var(--warn)"></i>Pádel</span><span><i style="background: #5b7fd6"></i>Bici</span></div>
         <div class="chart" id="ch-horas"></div>
       </div>
+    </div>
+    <div class="panel" style="margin-top: 12px">
+      <h2>Peso</h2>
+      <p class="note" id="peso-res">Apunta tu peso los domingos y aquí verás cómo cambia.</p>
+      <div class="chart" id="ch-peso"></div>
     </div>
     <div class="panel" style="margin-top: 12px">
       <h2>Km por zapatilla</h2>
@@ -324,6 +338,7 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0
       al.append(b, 'Si no se calma en 24 h, cambia el próximo rodaje por caminar o bici suave y quita el pádel esa semana.');
       al.hidden = false;
     } else al.hidden = true;
+    renderPesoAviso();
   }
 
   const NS = 'http://www.w3.org/2000/svg';
@@ -515,7 +530,7 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0
       if (d.tipo === 'bici') fs.appendChild(field(d, 'bkm', 'Km bici', 0.1, ''));
       fs.appendChild(field(d, 'pasos', 'Pasos', 100, '10000'));
       fs.appendChild(field(d, 'dolor', 'Dolor 0–10', 1, '0'));
-      if (d.tipo === 'descanso' && new Date(d.fecha + 'T12:00:00').getDay() === 0) fs.appendChild(field(d, 'peso', 'Peso kg', 0.1, ''));
+      if (new Date(d.fecha + 'T12:00:00').getDay() === 0 || d.peso != null) fs.appendChild(field(d, 'peso', 'Peso kg', 0.1, ''));
       card.append(top);
       if (openSwap === d.id) card.appendChild(swapRow(d));
       if (d.extras && d.extras.length) { const ex = document.createElement('div'); ex.className = 'extras'; d.extras.forEach((_, i) => ex.appendChild(extraRow(d, i))); card.appendChild(ex); }
@@ -641,8 +656,51 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0
     saveShoes(ZAPAS.concat([{ id, name, color: $('zn-color').value, km_inicio: km != null ? Math.max(0, km) : 0 }]));
     $('zn-name').value = ''; $('zn-km').value = '';
   });
+  function pesoTarget() {
+    // Domingo: hoy. Lunes o martes: el domingo anterior, si quedó sin apuntar.
+    const t = new Date(todayStr + 'T12:00:00'), wd = t.getDay();
+    if (wd > 2) return null;
+    t.setDate(t.getDate() - wd);
+    const f = t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
+    const d = all.find((x) => x.fecha === f);
+    return d && d.peso == null ? d : null;
+  }
+  function renderPesoAviso() {
+    const box = $('pesoAviso'), d = pesoTarget();
+    box.hidden = !d || readOnly || tab === 'gym';
+    if (d) box.dataset.id = d.id;
+  }
+  $('pesoAviso').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const v = num($('pesoHoy').value), id = $('pesoAviso').dataset.id; if (v == null || !id) return;
+    $('pesoHoy').value = '';
+    const d = all.find((x) => x.id === id); if (d) d.peso = v;
+    save(id, { peso: v });
+  });
+  function renderPeso() {
+    const pts = all.filter((d) => d.peso != null).map((d) => ({ f: d.fecha, v: d.peso }));
+    const el = $('ch-peso'); el.replaceChildren();
+    if (!pts.length) { $('peso-res').textContent = 'Apunta tu peso los domingos y aquí verás cómo cambia.'; return; }
+    const a = pts[0], z = pts[pts.length - 1], dif = Math.round((z.v - a.v) * 10) / 10;
+    const prev = pts.length > 1 ? pts[pts.length - 2] : null, dw = prev ? Math.round((z.v - prev.v) * 10) / 10 : null;
+    const fmtD = (f) => Number(f.slice(8)) + ' ' + MSHORT(f.slice(0, 7));
+    const sg = (x) => (x > 0 ? '+' : x < 0 ? '−' : '±') + nf(Math.abs(x)) + ' kg';
+    $('peso-res').textContent = pts.length < 2 ? 'Primer peso: ' + nf(a.v) + ' kg el ' + fmtD(a.f) + '. El domingo que viene verás la comparación.'
+      : 'Ahora ' + nf(z.v) + ' kg. Desde el ' + fmtD(a.f) + ': ' + sg(dif) + '. Desde la última vez: ' + sg(dw) + '.';
+    if (pts.length < 2) return;
+    const W = Math.max(280, el.clientWidth || 320), H = 170, m = { t: 14, r: 12, b: 24, l: 40 };
+    const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Evolución del peso' }, el);
+    const lo = Math.floor(Math.min(...pts.map((p) => p.v)) - 1), hi = Math.ceil(Math.max(...pts.map((p) => p.v)) + 1);
+    const t0 = Date.parse(a.f), t1 = Date.parse(z.f), iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const x = (f) => m.l + (Date.parse(f) - t0) / (t1 - t0) * iw, y = (v) => m.t + (hi - v) / (hi - lo) * ih;
+    [lo, (lo + hi) / 2, hi].forEach((t) => { svgEl('line', { x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), stroke: 'var(--line)' }, svg);
+      svgEl('text', { x: m.l - 6, y: y(t) + 4, 'text-anchor': 'end' }, svg).textContent = nf(t); });
+    svgEl('path', { d: pts.map((p, i) => (i ? 'L' : 'M') + x(p.f).toFixed(1) + ',' + y(p.v).toFixed(1)).join(''), fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2.5, 'stroke-linejoin': 'round' }, svg);
+    pts.forEach((p) => svgEl('circle', { cx: x(p.f), cy: y(p.v), r: 3.5, fill: 'var(--accent)' }, svg));
+    [a, z].forEach((p, i) => svgEl('text', { x: x(p.f), y: H - 6, 'text-anchor': i ? 'end' : 'start' }, svg).textContent = fmtD(p.f));
+  }
   function renderGeneral() {
-    renderShoes();
+    renderShoes(); renderPeso();
     const rows = months().map((m) => { const s = summary(all.filter((d) => d.fecha.startsWith(m)));
       return { m, label: MSHORT(m), km: Math.round(s.km * 10) / 10, plan: s.kmPlan, gym: Math.round(s.gymMin / 6) / 10, padel: Math.round(s.padelMin / 6) / 10, bici: Math.round(s.biciMin / 6) / 10, s }; });
     barsChart($('ch-meses'), rows, [{ key: 'plan', color: 'var(--plan)' }, { key: 'km', color: 'var(--accent)' }], 'km');
