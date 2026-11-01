@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="es"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sports Plan · Entreno</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0e7c66">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sports Plan">
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<script src="seed.js"></script>
+<script src="db.js"></script>
+</head><body>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Figtree:wght@400;500;600&display=swap">
+<style>
+/* Layout: one column, month summary on top, two charts, then a day-by-day list built for the thumb */
+:root {
+  --bg: #f4f6f5; --panel: #ffffff; --fg: #17201d; --muted: #5d6a65; --line: #dbe2df;
+  --accent: #0e7c66; --accent-soft: #d6efe8; --plan: #a9b6b1;
+  --ok: #1f8a4c; --ok-soft: #dcf2e4; --bad: #c8382b; --bad-soft: #fbe3e0; --warn: #b26a00;
+  --display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1513; --panel: #18201d; --fg: #e7eeeb; --muted: #95a39e; --line: #2a3531;
+  --accent: #3cc3a2; --accent-soft: #163a31; --plan: #4d5b56;
+  --ok: #4cc77d; --ok-soft: #153523; --bad: #ff6b5e; --bad-soft: #3d1a17; --warn: #f0a63a; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1513; --panel: #18201d; --fg: #e7eeeb; --muted: #95a39e; --line: #2a3531;
+  --accent: #3cc3a2; --accent-soft: #163a31; --plan: #4d5b56;
+  --ok: #4cc77d; --ok-soft: #153523; --bad: #ff6b5e; --bad-soft: #3d1a17; --warn: #f0a63a; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.45; }
+.wrap { max-width: 46rem; margin: 0 auto; padding-block: 20px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 18px; }
+h1 { font-family: var(--display); font-weight: 700; font-size: 2.4rem; line-height: 1; margin: 0; letter-spacing: .01em; text-transform: uppercase; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0; text-transform: uppercase; letter-spacing: .03em; }
+.sub { color: var(--muted); margin: 6px 0 0; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; min-width: 0; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr)); gap: 10px; }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.stat .k { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.stat .v { font-family: var(--display); font-weight: 600; font-size: 2rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.stat .v small { font-family: var(--body); font-size: .85rem; color: var(--muted); font-weight: 500; margin-left: 3px; }
+.stat .d { font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar { height: 6px; background: var(--line); border-radius: 3px; margin-top: 8px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--accent); border-radius: 3px; width: 0; transition: width .4s; }
+.alert { border-radius: 12px; padding: 12px 14px; background: var(--bad-soft); color: var(--fg); border: 1px solid var(--bad); }
+.alert b { color: var(--bad); }
+.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: 12px; }
+.note { color: var(--muted); font-size: .82rem; margin: 4px 0 10px; }
+.chart { position: relative; }
+.chart svg { display: block; width: 100%; height: auto; }
+.chart text { fill: var(--muted); font: 11px var(--body); }
+.legend { display: flex; gap: 14px; font-size: .78rem; color: var(--muted); margin-bottom: 6px; flex-wrap: wrap; }
+.legend i { display: inline-block; width: 12px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 5px; }
+.days { display: grid; gap: 8px; }
+.week-h { font-family: var(--display); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 10px 0 0; font-size: .95rem; }
+.day { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 10px; }
+.day.today { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.day.done { background: linear-gradient(0deg, var(--ok-soft), var(--ok-soft)); border-color: color-mix(in srgb, var(--ok) 40%, var(--line)); }
+.day.miss { background: linear-gradient(0deg, var(--bad-soft), var(--bad-soft)); }
+.day-top { display: flex; align-items: center; gap: 12px; }
+.date { width: 3rem; flex: none; text-align: center; }
+.date .dn { font-family: var(--display); font-weight: 700; font-size: 1.7rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.date .dw { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.what { flex: 1; min-width: 0; }
+.what .t { font-weight: 600; }
+.what .p { font-size: .82rem; color: var(--muted); }
+.tag { display: inline-block; font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; padding: 1px 7px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); margin-right: 6px; font-weight: 600; vertical-align: 1px; }
+.checks { display: flex; gap: 6px; flex: none; }
+.cb { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); font-size: 1.2rem; cursor: pointer; display: grid; place-items: center; }
+.cb:focus-visible, .fld input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cb.yes[aria-pressed="true"] { background: var(--ok); border-color: var(--ok); color: #fff; }
+.cb.no[aria-pressed="true"] { background: var(--bad); border-color: var(--bad); color: #fff; }
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr)); gap: 8px; }
+.fld { display: grid; gap: 2px; }
+.fld span { font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.fld input { width: 100%; box-sizing: border-box; font: 500 1rem var(--body); font-variant-numeric: tabular-nums; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); min-width: 0; }
+.fld input.hi { border-color: var(--bad); color: var(--bad); }
+.step { display: flex; gap: 4px; }
+.step input { text-align: center; }
+.sb { flex: none; width: 36px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); font: 600 1.1rem var(--body); cursor: pointer; }
+.sb:focus-visible, .swapbtn:focus-visible, .swap select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.fld.wide { grid-column: span 2; }
+.swapbtn { margin-top: 4px; background: none; border: 0; padding: 4px 0; color: var(--accent); font: 600 .8rem var(--body); cursor: pointer; }
+.swap { display: grid; gap: 4px; }
+.swap span { font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.swap select { font: 500 .95rem var(--body); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); width: 100%; }
+.tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+.tab { flex: none; border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 99px; padding: 8px 16px; font: 600 .9rem var(--body); cursor: pointer; text-transform: capitalize; }
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tblwrap { overflow-x: auto; }
+.tbl { width: 100%; border-collapse: collapse; font-size: .85rem; font-variant-numeric: tabular-nums; }
+.tbl th, .tbl td { padding: 8px 8px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+.tbl th:first-child, .tbl td:first-child { text-align: left; text-transform: capitalize; }
+.tbl th { color: var(--muted); font-weight: 500; font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; }
+.tbl tr.cur td { font-weight: 600; }
+.gymlist { display: grid; gap: 10px; margin-top: 12px; }
+.ej { display: grid; grid-template-columns: 2.2rem 1fr; gap: 4px 12px; }
+.ej .n { grid-row: span 3; font-family: var(--display); font-weight: 700; font-size: 1.8rem; color: var(--accent); line-height: 1; }
+.ej .nm { font-weight: 600; font-size: 1.02rem; }
+.ej .sr { font-family: var(--display); font-weight: 600; font-size: 1.15rem; margin-left: 6px; color: var(--accent); white-space: nowrap; }
+.ej .cl { color: var(--fg); font-size: .9rem; }
+.ej .pr { color: var(--muted); font-size: .82rem; }
+.ej .fields { grid-column: 1 / -1; margin-top: 6px; }
+.ej input[type=text] { width: 100%; box-sizing: border-box; font: 400 .95rem var(--body); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); }
+.list { margin: 8px 0 0; padding-left: 1.1rem; display: grid; gap: 4px; }
+.list.no li::marker { content: "✕  "; color: var(--bad); }
+.shoes { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.shoes .lb { font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-right: 2px; }
+.shoe { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 99px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); font: 500 .85rem var(--body); cursor: pointer; }
+.shoe[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); font-weight: 600; }
+.shoe:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.dot { width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--muted); flex: none; }
+.shoe-rows { display: grid; gap: 12px; }
+.shoe-row { display: grid; grid-template-columns: minmax(5rem, 7.5rem) 1fr auto auto; gap: 10px; align-items: center; font-variant-numeric: tabular-nums; }
+.shoe-row .nm { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.shoe-row .track { height: 10px; background: var(--line); border-radius: 5px; overflow: hidden; }
+.shoe-row .track i { display: block; height: 100%; background: var(--accent); border-radius: 5px; }
+.shoe-row .v { font-weight: 600; }
+.extra .shoes { flex-basis: 100%; }
+.shoe-row .nm { min-width: 0; overflow-wrap: anywhere; }
+.shoe-del { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); cursor: pointer; }
+.shoe-conf { display: flex; gap: 6px; align-items: center; font-size: .8rem; }
+.shoe-conf button { border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); padding: 5px 10px; font: 600 .8rem var(--body); cursor: pointer; }
+.shoe-conf button.yes { background: var(--bad); border-color: var(--bad); color: #fff; }
+.shoe-form { display: grid; grid-template-columns: 1fr 3rem 8rem auto; gap: 8px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+@media (max-width: 480px) { .shoe-form { grid-template-columns: 1fr 3rem; } }
+.shoe-form input { box-sizing: border-box; width: 100%; font: 500 .95rem var(--body); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); min-width: 0; }
+.shoe-form input[type=color] { padding: 2px; height: 40px; cursor: pointer; }
+.shoe-form button { border: 0; border-radius: 8px; background: var(--accent); color: var(--bg); font: 600 .95rem var(--body); padding: 8px 14px; cursor: pointer; }
+.shoe-form button:focus-visible, .shoe-del:focus-visible, .shoe-conf button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hint { font-size: .8rem; color: var(--muted); }
+.extras { display: grid; gap: 6px; }
+.extra { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px; border-radius: 10px; border: 1px dashed var(--accent); }
+.extra .tag { margin: 0; }
+.extra .step { flex: 1; min-width: 9rem; }
+.extra .x { flex: none; width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); cursor: pointer; font-size: 1rem; }
+.extra .u { font-size: .8rem; color: var(--muted); }
+.warnline { font-size: .8rem; color: var(--warn); font-weight: 500; }
+.empty { text-align: center; color: var(--muted); padding: 32px 16px; }
+.foot { font-size: .8rem; color: var(--muted); }
+.saved { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--fg); color: var(--bg); padding: 8px 14px; border-radius: 99px; font-size: .85rem; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.saved.on { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .bar i, .saved { transition: none; } }
+</style>
+
+<div class="wrap">
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Meses"></nav>
+  <header>
+    <h1 id="mes-titulo">Mi mes</h1>
+    <p class="sub" id="sub-mes">Marca cada día como hecho ✓ o no ✗ y ajusta los km con − y +. Si mueves una sesión, usa «⇄ Cambiar día». Todo se suma solo.</p>
+  </header>
+
+  <div id="alerta" class="alert" hidden></div>
+
+  <section class="stats" id="v-stats" aria-label="Resumen del mes">
+    <div class="stat"><div class="k">Km corridos</div><div class="v"><span id="s-km">–</span><small>km</small></div><div class="d">Plan del mes: <span id="s-kmplan">–</span> km</div><div class="bar"><i id="b-km"></i></div></div>
+    <div class="stat"><div class="k">Gym</div><div class="v"><span id="s-gym">–</span><small>h</small></div><div class="d"><span id="s-gymses">–</span> sesiones</div></div>
+    <div class="stat"><div class="k">Pádel</div><div class="v"><span id="s-padel">–</span><small>h</small></div><div class="d">Extras del mes: <span id="s-extras">–</span></div></div>
+    <div class="stat"><div class="k">Pasos al día</div><div class="v"><span id="s-pasos">–</span></div><div class="d"><span id="s-10k">–</span> días con 10.000</div></div>
+    <div class="stat"><div class="k">Cumplido</div><div class="v"><span id="s-cumpl">–</span><small>%</small></div><div class="d">Racha: <span id="s-racha">–</span> días</div></div>
+    <div class="stat"><div class="k">Dolor máx.</div><div class="v"><span id="s-dolor">–</span><small>/10</small></div><div class="d">Límite 4</div></div>
+  </section>
+
+  <section id="v-gen" hidden>
+    <div class="charts">
+      <div class="panel">
+        <h2>Km por mes</h2>
+        <p class="note">Lo corrido (extras incluidos) frente al plan de cada mes.</p>
+        <div class="legend"><span><i style="background: var(--plan)"></i>Plan</span><span><i style="background: var(--accent)"></i>Real</span></div>
+        <div class="chart" id="ch-meses"></div>
+      </div>
+      <div class="panel">
+        <h2>Gym y pádel por mes</h2>
+        <p class="note">Horas de cada mes.</p>
+        <div class="legend"><span><i style="background: var(--accent)"></i>Gym</span><span><i style="background: var(--warn)"></i>Pádel</span></div>
+        <div class="chart" id="ch-horas"></div>
+      </div>
+    </div>
+    <div class="panel" style="margin-top: 12px">
+      <h2>Km por zapatilla</h2>
+      <p class="note">Total acumulado. Unas zapatillas suelen durar 600–800 km; a partir de ahí amortiguan peor, y eso tu espalda lo nota.</p>
+      <div class="shoe-rows" id="shoe-rows"></div>
+      <form class="shoe-form" id="shoe-form" aria-label="Añadir zapatillas">
+        <input id="zn-name" type="text" maxlength="20" placeholder="Nombre, p. ej. Rojas" aria-label="Nombre de las zapatillas" required>
+        <input id="zn-color" type="color" value="#e4572e" aria-label="Color">
+        <input id="zn-km" type="number" min="0" step="1" inputmode="numeric" placeholder="Km que ya tienen" aria-label="Km que ya tienen">
+        <button type="submit" id="zn-add">Añadir</button>
+      </form>
+    </div>
+    <div class="panel" style="margin-top: 12px">
+      <h2>Mes a mes</h2>
+      <div class="tblwrap"><table class="tbl" id="tbl-meses">
+        <thead><tr><th>Mes</th><th>Km</th><th>Plan</th><th>Gym h</th><th>Pádel h</th><th>Pasos/día</th><th>Días 10k</th><th>Cumplido</th><th>Dolor máx</th><th>Peso</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <section id="v-gym" hidden>
+    <div class="panel">
+      <h2>Calentamiento · 5–8 min</h2>
+      <ul class="list">
+        <li>5 min de bici o elíptica suave.</li>
+        <li>Gato-camello suave: 6–8 repeticiones, sin forzar el final del movimiento.</li>
+        <li>10 puentes de glúteo rápidos, sin pausa.</li>
+      </ul>
+    </div>
+    <div class="gymlist" id="gym-list"><div class="empty">Cargando tu rutina…</div></div>
+    <div class="panel" style="margin-top: 12px">
+      <h2>Evitar de momento</h2>
+      <ul class="list no">
+        <li>Peso muerto, en cualquier variante.</li>
+        <li>Sentadilla con barra o con carga.</li>
+        <li>Giros o flexión de espalda con peso (russian twist, leñador con carga).</li>
+        <li>Abdominales tipo crunch o sit-up.</li>
+        <li>Prensa de piernas tan profunda que la pelvis se despegue del respaldo.</li>
+      </ul>
+    </div>
+    <p class="note" style="margin-top: 12px">Descansa 60–90 s entre series. Si un ejercicio te da más de 3–4/10 de dolor o te deja peor al día siguiente, quítalo esa semana y cuéntamelo.</p>
+  </section>
+
+  <div id="v-mes">
+  <section class="charts">
+    <div class="panel">
+      <h2>Km acumulados</h2>
+      <p class="note">Lo que llevas frente a lo previsto día a día.</p>
+      <div class="legend"><span><i style="background: var(--plan)"></i>Plan</span><span><i style="background: var(--accent)"></i>Real</span></div>
+      <div class="chart" id="ch-km"></div>
+    </div>
+    <div class="panel">
+      <h2>Pasos diarios</h2>
+      <p class="note">La línea es la meta de 10.000.</p>
+      <div class="chart" id="ch-pasos"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Día a día</h2>
+    <div class="days" id="dias"><div class="empty">Cargando tu mes…</div></div>
+  </section>
+  </div>
+
+  <p class="foot">Regla del dolor: hasta 3–4/10 que se calma en 24 h vale; si dura más o empeora, baja la carga. Ve al médico si notas pérdida de fuerza en una pierna, adormecimiento en la zona genital o problemas para controlar orina o heces.</p>
+</div>
+<div class="saved" id="saved" role="status">Guardado</div>
+
+<script>
+(function () {
+  const META_PASOS = 10000, LIMITE_DOLOR = 4;
+  const DW = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+  const TAG = { correr: 'Correr', largo: 'Largo', padel: 'Pádel', gym: 'Gym', descanso: 'Descanso' };
+  let days = [], all = [], ejs = [], tab = null, db = null, readOnly = false;
+  const MONTH = (m) => new Date(m + '-15T12:00:00').toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+  const MSHORT = (m) => new Date(m + '-15T12:00:00').toLocaleDateString('es-ES', { month: 'short' }).replace('.', '');
+  const $ = (id) => document.getElementById(id);
+  const nf = (v, d = 1) => v == null ? '–' : Number(v).toLocaleString('es-ES', { maximumFractionDigits: d });
+  const todayStr = (() => { const t = new Date(); return t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0'); })();
+  const num = (v) => (v === '' || v == null || isNaN(Number(v))) ? null : Number(v);
+
+  function toast() { const s = $('saved'); s.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => s.classList.remove('on'), 1200); }
+  async function save(id, patch) {
+    const d = days.find((x) => x.id === id); if (d) Object.assign(d, patch);
+    render();
+    if (!db || readOnly) return;
+    try { await db.doc('dias/' + id).update(patch); toast(); }
+    catch (e) { if (e && e.code === 'invalid_argument') { readOnly = true; render(); } }
+  }
+
+  function summary(list = days) {
+    const s = { km: 0, kmPlan: 0, gymMin: 0, gymSes: 0, padelMin: 0, nExtra: 0, pasos: [], k10: 0, done: 0, past: 0, dolor: null, racha: 0, peso: null };
+    list.forEach((d) => {
+      if (d.peso != null) s.peso = d.peso;
+      if (d.km != null) s.km += d.km;
+      if (d.tipo === 'padel' && d.hecho === true) s.padelMin += d.min ?? 0;
+      (d.extras || []).forEach((e) => { s.nExtra++;
+        if (e.tipo === 'correr') s.km += e.km ?? 0;
+        if (e.tipo === 'gym') { s.gymSes++; s.gymMin += e.min ?? 0; }
+        if (e.tipo === 'padel') s.padelMin += e.min ?? 0; });
+      if (d.km_plan != null) s.kmPlan += d.km_plan;
+      if (d.tipo === 'gym' && d.hecho === true) { s.gymSes++; s.gymMin += d.min ?? 0; }
+      if (d.pasos != null) { s.pasos.push(d.pasos); if (d.pasos >= META_PASOS) s.k10++; }
+      if (d.dolor != null) s.dolor = Math.max(s.dolor ?? 0, d.dolor);
+      if (d.fecha <= todayStr) { s.past++; if (d.hecho === true) s.done++; }
+    });
+    const past = list.filter((d) => d.fecha <= todayStr);
+    for (let i = past.length - 1; i >= 0; i--) {
+      if (past[i].hecho === true) s.racha++;
+      else if (past[i].fecha === todayStr && past[i].hecho == null) continue;
+      else break;
+    }
+    return s;
+  }
+
+  function renderStats() {
+    const s = summary();
+    $('s-km').textContent = nf(s.km); $('s-kmplan').textContent = nf(s.kmPlan);
+    $('b-km').style.width = Math.min(100, s.kmPlan ? s.km / s.kmPlan * 100 : 0) + '%';
+    $('s-gym').textContent = nf(s.gymMin / 60); $('s-gymses').textContent = s.gymSes;
+    $('s-padel').textContent = nf(s.padelMin / 60); $('s-extras').textContent = s.nExtra;
+    $('s-pasos').textContent = s.pasos.length ? nf(Math.round(s.pasos.reduce((a, b) => a + b, 0) / s.pasos.length), 0) : '–';
+    $('s-10k').textContent = s.k10;
+    $('s-cumpl').textContent = s.past ? Math.round(s.done / s.past * 100) : '–';
+    $('s-racha').textContent = s.racha;
+    $('s-dolor').textContent = s.dolor == null ? '–' : nf(s.dolor);
+    $('s-dolor').style.color = s.dolor != null && s.dolor > LIMITE_DOLOR ? 'var(--bad)' : '';
+    const recent = days.filter((d) => d.fecha <= todayStr && d.dolor != null && d.dolor > LIMITE_DOLOR).slice(-1)[0];
+    const al = $('alerta');
+    if (recent && (new Date(todayStr) - new Date(recent.fecha)) / 864e5 <= 2) {
+      al.replaceChildren();
+      const b = document.createElement('b'); b.textContent = 'Dolor de ' + nf(recent.dolor) + '/10 el ' + Number(recent.fecha.slice(8)) + '. ';
+      al.append(b, 'Si no se calma en 24 h, cambia el próximo rodaje por caminar o bici suave y quita el pádel esa semana.');
+      al.hidden = false;
+    } else al.hidden = true;
+  }
+
+  const NS = 'http://www.w3.org/2000/svg';
+  function svgEl(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+  function frame(el, maxV, ticks) {
+    el.replaceChildren();
+    const W = Math.max(280, el.clientWidth || 320), H = 190, m = { t: 10, r: 10, b: 24, l: 40 };
+    const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img' }, el);
+    const n = days.length, iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const x = (i) => m.l + (i + 0.5) * iw / n, y = (v) => m.t + ih - v / maxV * ih;
+    ticks.forEach((t) => {
+      svgEl('line', { x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), stroke: 'var(--line)' }, svg);
+      svgEl('text', { x: m.l - 6, y: y(t) + 4, 'text-anchor': 'end' }, svg).textContent = t >= 1000 ? (t / 1000) + 'k' : t;
+    });
+    days.forEach((d, i) => { const dn = Number(d.fecha.slice(8)); if (dn === 1 || dn % 5 === 0) svgEl('text', { x: x(i), y: H - 6, 'text-anchor': 'middle' }, svg).textContent = dn; });
+    return { svg, x, y, W, H, m, iw, n };
+  }
+  function niceMax(v, step) { return Math.max(step, Math.ceil(v / step) * step); }
+
+  function renderCharts() {
+    if (!days.length) return;
+    let ap = 0, ar = 0; const plan = [], real = [];
+    days.forEach((d) => { const ek = (d.extras || []).reduce((a, e) => a + (e.tipo === 'correr' ? e.km ?? 0 : 0), 0);
+      ap += d.km_plan ?? 0; ar += (d.km ?? 0) + ek; plan.push(ap); real.push(d.fecha <= todayStr || d.km != null || ek ? ar : null); });
+    const maxKm = niceMax(Math.max(ap, ar), 20);
+    const f = frame($('ch-km'), maxKm, [0, maxKm / 2, maxKm]);
+    const path = (arr) => arr.map((v, i) => v == null ? '' : (i === 0 || arr[i - 1] == null ? 'M' : 'L') + f.x(i).toFixed(1) + ',' + f.y(v).toFixed(1)).join('');
+    svgEl('path', { d: path(plan), fill: 'none', stroke: 'var(--plan)', 'stroke-width': 2, 'stroke-dasharray': '5 4' }, f.svg);
+    svgEl('path', { d: path(real), fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2.5, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, f.svg);
+    const li = real.reduce((a, v, i) => v == null ? a : i, -1);
+    if (li >= 0) { svgEl('circle', { cx: f.x(li), cy: f.y(real[li]), r: 4, fill: 'var(--accent)' }, f.svg);
+      const lbl = svgEl('text', { x: Math.min(f.x(li) + 6, f.W - 40), y: f.y(real[li]) - 8 }, f.svg); lbl.textContent = nf(real[li]) + ' km'; lbl.style.fill = 'var(--fg)'; }
+
+    const maxP = niceMax(Math.max(META_PASOS, ...days.map((d) => d.pasos ?? 0)), 5000);
+    const g = frame($('ch-pasos'), maxP, [0, 5000, 10000, maxP].filter((v, i, a) => a.indexOf(v) === i && v <= maxP));
+    const bw = Math.max(3, g.iw / g.n * 0.62);
+    days.forEach((d, i) => { if (d.pasos == null) return;
+      svgEl('rect', { x: g.x(i) - bw / 2, y: g.y(d.pasos), width: bw, height: g.y(0) - g.y(d.pasos), rx: 2, fill: d.pasos >= META_PASOS ? 'var(--ok)' : 'var(--plan)' }, g.svg); });
+    svgEl('line', { x1: g.m.l, x2: g.W - g.m.r, y1: g.y(META_PASOS), y2: g.y(META_PASOS), stroke: 'var(--accent)', 'stroke-width': 1.5, 'stroke-dasharray': '4 3' }, g.svg);
+  }
+
+  function tpl(tipo, d) {
+    const largoSemana = (days.find((x) => x.semana === d.semana && x.tipo === 'largo' && x.id !== d.id) || {}).km_plan;
+    return ({
+      correr: { tipo, plan: '8 km cómodo', detalle: '6:00–6:20/km', km_plan: 8, min_plan: null },
+      largo: { tipo, plan: 'Tirada larga ' + (largoSemana ?? 8) + ' km', detalle: 'Suave, 6:15–6:30/km', km_plan: largoSemana ?? 8, min_plan: null },
+      padel: { tipo, plan: 'Pádel con cautela', detalle: 'Si la espalda se resiente: caminar rápido o bici', km_plan: null, min_plan: 60 },
+      gym: { tipo, plan: 'Gym espalda y core', detalle: 'Bird dog, dead bug, plancha lateral, puente, zancada estática, remo con pecho apoyado, gemelos · 3×8–12', km_plan: null, min_plan: 45 },
+      descanso: { tipo, plan: 'Descanso', detalle: 'Caminar 20–30 min', km_plan: null, min_plan: null }
+    })[tipo];
+  }
+  let ZAPAS = [], delShoe = null;
+  const VIDA_ZAPA = 700;
+  function shoePicker(cur, idBase, onPick) {
+    const w = document.createElement('div'); w.className = 'shoes'; w.setAttribute('role', 'group'); w.setAttribute('aria-label', 'Zapatillas');
+    const lb = document.createElement('span'); lb.className = 'lb'; lb.textContent = 'Zapatillas'; w.appendChild(lb);
+    if (!ZAPAS.length) { const h = document.createElement('span'); h.className = 'hint'; h.textContent = 'Añade tus zapatillas en la pestaña General.'; w.appendChild(h); }
+    ZAPAS.forEach((z) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'shoe'; b.id = 'zapa-' + z.id + '-' + idBase; b.disabled = readOnly;
+      b.setAttribute('aria-pressed', String(cur === z.id));
+      const dt = document.createElement('span'); dt.className = 'dot'; dt.style.background = z.color;
+      b.append(dt, z.name);
+      b.addEventListener('click', () => onPick(cur === z.id ? null : z.id));
+      w.appendChild(b);
+    });
+    return w;
+  }
+  const EXTRA = { correr: { name: 'Correr', km: 5, min: null }, gym: { name: 'Gym', km: null, min: 45 }, padel: { name: 'Pádel', km: null, min: 60 } };
+  function extraRow(d, idx) {
+    const e = d.extras[idx], isKm = e.tipo === 'correr', key = isKm ? 'km' : 'min', inc = isKm ? 1 : 5;
+    const row = document.createElement('div'); row.className = 'extra';
+    const tg = document.createElement('span'); tg.className = 'tag'; tg.textContent = 'Extra · ' + (EXTRA[e.tipo] ? EXTRA[e.tipo].name : e.tipo);
+    const setV = (v) => { const arr = d.extras.map((x) => Object.assign({}, x)); arr[idx][key] = v; save(d.id, { extras: arr }); };
+    const st = document.createElement('div'); st.className = 'step';
+    const inp = document.createElement('input'); inp.type = 'number'; inp.inputMode = 'decimal'; inp.min = 0; inp.step = isKm ? 0.1 : 5; inp.id = 'ex-' + idx + '-' + d.id; inp.value = e[key] ?? ''; inp.disabled = readOnly;
+    inp.setAttribute('aria-label', (isKm ? 'Km' : 'Minutos') + ' del extra');
+    inp.style.cssText = 'width:100%;box-sizing:border-box;font:500 1rem var(--body);padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);min-width:0;text-align:center';
+    inp.addEventListener('change', () => setV(num(inp.value)));
+    const mk = (txt, dir) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'sb'; b.textContent = txt; b.id = 'ex-' + idx + (dir > 0 ? '-mas-' : '-menos-') + d.id; b.disabled = readOnly; b.setAttribute('aria-label', (dir > 0 ? 'Sumar ' : 'Restar ') + inc); b.addEventListener('click', () => setV(Math.max(0, Math.round(((e[key] ?? 0) + dir * inc) * 10) / 10))); return b; };
+    st.append(mk('−', -1), inp, mk('+', 1));
+    const u = document.createElement('span'); u.className = 'u'; u.textContent = isKm ? 'km' : 'min';
+    const x = document.createElement('button'); x.type = 'button'; x.className = 'x'; x.textContent = '×'; x.id = 'ex-del-' + idx + '-' + d.id; x.disabled = readOnly; x.setAttribute('aria-label', 'Quitar extra');
+    x.addEventListener('click', () => save(d.id, { extras: d.extras.filter((_, i) => i !== idx) }));
+    row.append(tg, st, u, x);
+    if (isKm) row.appendChild(shoePicker(e.zapa, 'ex' + idx + '-' + d.id, (z) => { const arr = d.extras.map((y) => Object.assign({}, y)); arr[idx].zapa = z; save(d.id, { extras: arr }); }));
+    return row;
+  }
+  const RESET = { hecho: null, km: null, min: null };
+  const PLANF = ['tipo', 'plan', 'detalle', 'km_plan', 'min_plan'];
+  let openSwap = null;
+  function swapDays(a, b) {
+    const pa = {}, pb = {};
+    PLANF.forEach((k) => { pa[k] = b[k] ?? null; pb[k] = a[k] ?? null; });
+    openSwap = null;
+    save(a.id, Object.assign(pa, RESET)); save(b.id, Object.assign(pb, RESET));
+  }
+  function swapRow(d) {
+    const w = document.createElement('label'); w.className = 'swap';
+    const s = document.createElement('span'); s.textContent = 'Cambiar este día';
+    const sel = document.createElement('select'); sel.id = 'sw-' + d.id;
+    sel.appendChild(new Option('Elige una opción…', ''));
+    const g1 = document.createElement('optgroup'); g1.label = 'Intercambiar con';
+    days.filter((x) => x.id !== d.id && Math.abs(new Date(x.fecha) - new Date(d.fecha)) <= 6 * 864e5).forEach((x) => {
+      g1.appendChild(new Option(DW[new Date(x.fecha + 'T12:00:00').getDay()] + ' ' + Number(x.fecha.slice(8)) + ' · ' + (x.plan || TAG[x.tipo]), 'swap:' + x.id));
+    });
+    const g2 = document.createElement('optgroup'); g2.label = 'Convertir en';
+    Object.keys(TAG).filter((t) => t !== d.tipo).forEach((t) => g2.appendChild(new Option(TAG[t], 'tipo:' + t)));
+    const g3 = document.createElement('optgroup'); g3.label = 'Añadir extra';
+    Object.keys(EXTRA).forEach((t) => g3.appendChild(new Option('Extra de ' + EXTRA[t].name.toLowerCase(), 'extra:' + t)));
+    sel.append(g3, g1, g2);
+    sel.addEventListener('change', () => {
+      const [k, v] = sel.value.split(':'); if (!v) return;
+      if (k === 'extra') { openSwap = null; const e = EXTRA[v]; save(d.id, { extras: (d.extras || []).concat([{ tipo: v, km: e.km, min: e.min }]) }); return; }
+      if (k === 'swap') { const o = days.find((x) => x.id === v); if (o) swapDays(d, o); }
+      else { openSwap = null; save(d.id, Object.assign({}, tpl(v, d), RESET)); }
+    });
+    w.append(s, sel); return w;
+  }
+  function stepper(d, key, label, inc, ph, planKey) {
+    const w = document.createElement('div'); w.className = 'fld wide';
+    const s = document.createElement('label'); s.textContent = label; s.htmlFor = key + '-' + d.id; s.style.cssText = 'font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em';
+    const row = document.createElement('div'); row.className = 'step';
+    const i = field(d, key, '', inc < 1 ? 0.1 : 1, ph).querySelector('input');
+    const bump = (dir) => { const base = d[key] ?? d[planKey] ?? 0; const v = Math.max(0, Math.round((base + dir * inc) * 10) / 10); save(d.id, { [key]: v }); };
+    const mk = (txt, dir, lab) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'sb'; b.textContent = txt; b.id = key + (dir > 0 ? '-mas-' : '-menos-') + d.id; b.setAttribute('aria-label', lab); b.disabled = readOnly; b.addEventListener('click', () => bump(dir)); return b; };
+    row.append(mk('−', -1, 'Restar ' + inc), i, mk('+', 1, 'Sumar ' + inc));
+    w.append(s, row); return w;
+  }
+
+  function field(d, key, label, step, ph) {
+    const w = document.createElement('label'); w.className = 'fld';
+    const s = document.createElement('span'); s.textContent = label;
+    const i = document.createElement('input'); i.type = 'number'; i.inputMode = 'decimal'; i.min = 0; i.step = step; i.id = key + '-' + d.id;
+    i.value = d[key] ?? ''; if (ph != null) i.placeholder = ph; i.disabled = readOnly;
+    if (key === 'dolor') { i.max = 10; if (d.dolor != null && d.dolor > LIMITE_DOLOR) i.classList.add('hi'); }
+    i.addEventListener('change', () => { let v = num(i.value); if (key === 'dolor' && v != null) v = Math.min(10, v); if (v !== d[key]) save(d.id, { [key]: v }); });
+    w.append(s, i); return w;
+  }
+
+  function renderDays() {
+    const host = $('dias');
+    const focusId = document.activeElement && document.activeElement.id;
+    host.replaceChildren();
+    if (!days.length) { const e = document.createElement('div'); e.className = 'empty'; e.textContent = creating[tab] === 'error' ? 'No se ha podido crear el plan de este mes. Recarga la página para reintentarlo.' : creating[tab] ? 'Preparando el plan de este mes…' : 'Este mes aún no tiene plan.'; host.appendChild(e); return; }
+    let week = null;
+    days.forEach((d) => {
+      if (d.semana !== week) { week = d.semana; const h = document.createElement('div'); h.className = 'week-h'; h.textContent = d.semana ? 'Semana ' + d.semana : 'Antes de empezar'; host.appendChild(h); }
+      const card = document.createElement('article');
+      card.className = 'day' + (d.fecha === todayStr ? ' today' : '') + (d.hecho === true ? ' done' : d.hecho === false ? ' miss' : '');
+      const top = document.createElement('div'); top.className = 'day-top';
+      const dt = document.createElement('div'); dt.className = 'date';
+      const dn = document.createElement('div'); dn.className = 'dn'; dn.textContent = Number(d.fecha.slice(8));
+      const dw = document.createElement('div'); dw.className = 'dw'; dw.textContent = DW[new Date(d.fecha + 'T12:00:00').getDay()];
+      dt.append(dn, dw);
+      const wh = document.createElement('div'); wh.className = 'what';
+      const t = document.createElement('div'); t.className = 't';
+      const tg = document.createElement('span'); tg.className = 'tag'; tg.textContent = TAG[d.tipo] || d.tipo;
+      t.append(tg, d.plan || '');
+      wh.appendChild(t);
+      if (d.detalle) { const p = document.createElement('div'); p.className = 'p'; p.textContent = d.detalle; wh.appendChild(p); }
+      const prev = days[days.indexOf(d) - 1];
+      const RUN = (t) => t === 'correr' || t === 'largo';
+      let warn = '';
+      if (prev && d.tipo === 'gym' && prev.tipo === 'padel') warn = 'Justo después del pádel: mejor otro día para la espalda.';
+      else if (prev && RUN(d.tipo) && RUN(prev.tipo)) warn = 'Dos días seguidos corriendo: deja uno de descanso entre medias.';
+      else if (prev && d.tipo === 'padel' && RUN(prev.tipo) && prev.tipo === 'largo') warn = 'Pádel tras la tirada larga: ve con cuidado.';
+      if (warn) { const p = document.createElement('div'); p.className = 'warnline'; p.textContent = '⚠ ' + warn; wh.appendChild(p); }
+      const sb = document.createElement('button'); sb.type = 'button'; sb.className = 'swapbtn'; sb.id = 'swb-' + d.id; sb.disabled = readOnly;
+      sb.textContent = openSwap === d.id ? 'Cerrar' : '⇄ Cambiar día o añadir extra'; sb.setAttribute('aria-expanded', String(openSwap === d.id));
+      sb.addEventListener('click', () => { openSwap = openSwap === d.id ? null : d.id; renderDays(); const s = document.getElementById('sw-' + d.id); if (s) s.focus(); });
+      wh.appendChild(sb);
+      const ch = document.createElement('div'); ch.className = 'checks';
+      [['yes', true, '✓', 'Hecho'], ['no', false, '✗', 'No hecho']].forEach(([cls, val, sym, lab]) => {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'cb ' + cls; b.textContent = sym; b.id = cls + '-' + d.id;
+        b.setAttribute('aria-label', lab + ', día ' + Number(d.fecha.slice(8))); b.setAttribute('aria-pressed', String(d.hecho === val)); b.disabled = readOnly;
+        b.addEventListener('click', () => {
+          const next = d.hecho === val ? null : val; const patch = { hecho: next };
+          if (next === true && (d.tipo === 'correr' || d.tipo === 'largo') && d.km == null && d.km_plan != null) patch.km = d.km_plan;
+          if (next === true && (d.tipo === 'gym' || d.tipo === 'padel') && d.min == null) patch.min = d.min_plan ?? 45;
+          save(d.id, patch);
+        });
+        ch.appendChild(b);
+      });
+      top.append(dt, wh, ch);
+      const fs = document.createElement('div'); fs.className = 'fields';
+      if (d.tipo === 'correr' || d.tipo === 'largo') { fs.appendChild(stepper(d, 'km', 'Km hechos', 1, d.km_plan, 'km_plan')); fs.appendChild(shoePicker(d.zapa, d.id, (z) => save(d.id, { zapa: z }))); }
+      if (d.tipo === 'gym' || d.tipo === 'padel') fs.appendChild(stepper(d, 'min', 'Minutos', 5, d.min_plan ?? 45, 'min_plan'));
+      fs.appendChild(field(d, 'pasos', 'Pasos', 100, '10000'));
+      fs.appendChild(field(d, 'dolor', 'Dolor 0–10', 1, '0'));
+      if (d.tipo === 'descanso' && new Date(d.fecha + 'T12:00:00').getDay() === 0) fs.appendChild(field(d, 'peso', 'Peso kg', 0.1, ''));
+      card.append(top);
+      if (openSwap === d.id) card.appendChild(swapRow(d));
+      if (d.extras && d.extras.length) { const ex = document.createElement('div'); ex.className = 'extras'; d.extras.forEach((_, i) => ex.appendChild(extraRow(d, i))); card.appendChild(ex); }
+      card.appendChild(fs);
+      host.appendChild(card);
+    });
+    if (focusId) { const f = document.getElementById(focusId); if (f) f.focus(); }
+  }
+
+  function months() { return [...new Set(all.map((d) => d.fecha.slice(0, 7)))].sort(); }
+  const ULTIMO_MES = '2027-12';
+  function tabMonths() {
+    const set = new Set(months()); let [y, m] = [2026, 11];
+    while (true) { const k = y + '-' + String(m).padStart(2, '0'); if (k > ULTIMO_MES) break; set.add(k); m++; if (m > 12) { m = 1; y++; } }
+    return [...set].sort();
+  }
+  const INICIO_PLAN = Date.UTC(2026, 10, 2);
+  function planDoc(fecha) {
+    const [y, mo, dd] = fecha.split('-').map(Number);
+    const wd = new Date(Date.UTC(y, mo - 1, dd)).getUTCDay();
+    const semana = Math.max(0, Math.floor((Date.UTC(y, mo - 1, dd) - INICIO_PLAN) / (7 * 864e5)) + 1);
+    const base = { fecha, semana, hecho: null, km: null, min: null, pasos: null, dolor: null, peso: null, km_plan: null, min_plan: null, extras: [], zapa: null };
+    const largo = 12;
+    const t = wd === 1 ? { tipo: 'correr', plan: '8 km cómodo', km_plan: 8, detalle: '6:00–6:20/km · al final 6 aceleraciones de 20 s si la espalda va bien' }
+      : wd === 2 ? { tipo: 'padel', plan: 'Pádel con cautela', min_plan: 60, detalle: 'Si la espalda se resiente: caminar rápido o bici' }
+      : wd === 4 ? { tipo: 'gym', plan: 'Gym espalda y core', min_plan: 45, detalle: 'Rutina de la pestaña Gym · 3×8–12' }
+      : wd === 6 ? { tipo: 'largo', plan: 'Tirada larga ' + largo + ' km', km_plan: largo, detalle: 'Suave, 6:15–6:30/km' }
+      : wd === 0 ? { tipo: 'descanso', plan: 'Descanso activo', detalle: 'Caminar o bici tranquila · pésate en ayunas' }
+      : { tipo: 'descanso', plan: 'Descanso', detalle: 'Caminar 20–30 min' };
+    return Object.assign(base, t);
+  }
+  const creating = {};
+  async function createMonth(m) {
+    if (!db || readOnly || creating[m]) return;
+    creating[m] = 'on'; renderDays();
+    const [y, mo] = m.split('-').map(Number), n = new Date(y, mo, 0).getDate();
+    try {
+      for (let d = 1; d <= n; d++) { const f = m + '-' + String(d).padStart(2, '0'); await db.doc('dias/' + f).set(planDoc(f)); }
+      creating[m] = 'done';
+    } catch (e) { creating[m] = 'error'; renderDays(); }
+  }
+  function renderTabs() {
+    const nav = $('tabs'); nav.replaceChildren();
+    ['general', 'gym', ...tabMonths()].forEach((m) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'tab'; b.id = 'tab-' + m; b.setAttribute('role', 'tab');
+      b.setAttribute('aria-selected', String(tab === m)); b.textContent = m === 'general' ? 'General' : m === 'gym' ? 'Gym' : MONTH(m).split(' ')[0] + (m.startsWith('2026') ? '' : ' ' + m.slice(2, 4));
+      b.addEventListener('click', () => { tab = m; try { localStorage.setItem('tab', m); } catch (e) {} applyTab(); });
+      nav.appendChild(b);
+    });
+    const sel = nav.querySelector('[aria-selected="true"]');
+    if (sel) nav.scrollLeft = sel.offsetLeft - nav.clientWidth / 2 + sel.offsetWidth / 2;
+  }
+  function applyTab() {
+    days = tab === 'general' || tab === 'gym' ? all : all.filter((d) => d.fecha.startsWith(tab));
+    $('mes-titulo').textContent = tab === 'general' ? 'General' : tab === 'gym' ? 'Rutina de gym' : MONTH(tab);
+    $('sub-mes').hidden = tab === 'general' || tab === 'gym';
+    render();
+    if (tab !== 'general' && tab !== 'gym' && !days.length && all.length) createMonth(tab);
+  }
+  function barsChart(el, rows, series, unit) {
+    el.replaceChildren();
+    const W = Math.max(280, el.clientWidth || 320), H = 190, m = { t: 18, r: 10, b: 24, l: 36 };
+    const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img' }, el);
+    const maxV = niceMax(Math.max(1, ...rows.flatMap((r) => series.map((s) => r[s.key] ?? 0))), unit === 'km' ? 20 : 5);
+    const iw = W - m.l - m.r, ih = H - m.t - m.b, n = Math.max(rows.length, 3), gw = iw / n;
+    const y = (v) => m.t + ih - v / maxV * ih;
+    [0, maxV / 2, maxV].forEach((t) => { svgEl('line', { x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), stroke: 'var(--line)' }, svg);
+      svgEl('text', { x: m.l - 6, y: y(t) + 4, 'text-anchor': 'end' }, svg).textContent = nf(t, 0); });
+    const bw = Math.min(32, gw * 0.7 / series.length);
+    rows.forEach((r, i) => {
+      const cx = m.l + gw * (i + 0.5);
+      series.forEach((s, j) => { const v = r[s.key] ?? 0, x = cx - bw * series.length / 2 + j * bw;
+        svgEl('rect', { x: x + 1, y: y(v), width: bw - 2, height: y(0) - y(v), rx: 3, fill: s.color }, svg);
+        if (v > 0) { const t = svgEl('text', { x: x + bw / 2, y: y(v) - 4, 'text-anchor': 'middle' }, svg); t.textContent = nf(v); t.style.fill = 'var(--fg)'; } });
+      const lb = svgEl('text', { x: cx, y: H - 6, 'text-anchor': 'middle' }, svg); lb.textContent = r.label;
+    });
+  }
+  function renderShoes() {
+    const tot = {}; ZAPAS.forEach((z) => { tot[z.id] = z.km_inicio || 0; }); let sin = 0;
+    all.forEach((d) => {
+      if (d.km != null && (d.tipo === 'correr' || d.tipo === 'largo')) { if (tot[d.zapa] != null) tot[d.zapa] += d.km; else sin += d.km; }
+      (d.extras || []).forEach((e) => { if (e.tipo === 'correr' && e.km != null) { if (tot[e.zapa] != null) tot[e.zapa] += e.km; else sin += e.km; } });
+    });
+    const host = $('shoe-rows'); host.replaceChildren();
+    const rows = ZAPAS.map((z) => ({ id: z.id, name: z.name, color: z.color, km: tot[z.id] }));
+    if (sin > 0) rows.push({ name: 'Sin marcar o retiradas', color: 'transparent', km: sin });
+    if (!rows.length) { const h = document.createElement('p'); h.className = 'hint'; h.textContent = 'No tienes zapatillas guardadas. Añádelas abajo.'; host.appendChild(h); }
+    rows.forEach((r) => {
+      const row = document.createElement('div'); row.className = 'shoe-row';
+      const nm = document.createElement('div'); nm.className = 'nm'; const dt = document.createElement('span'); dt.className = 'dot'; dt.style.background = r.color; nm.append(dt, r.name);
+      const tr = document.createElement('div'); tr.className = 'track'; const fill = document.createElement('i'); fill.style.width = Math.min(100, r.km / VIDA_ZAPA * 100) + '%';
+      if (r.km >= VIDA_ZAPA * 0.85) fill.style.background = 'var(--bad)'; tr.appendChild(fill);
+      const v = document.createElement('div'); v.className = 'v'; v.textContent = nf(r.km) + ' km';
+      row.append(nm, tr, v);
+      if (r.id && !readOnly) {
+        if (delShoe === r.id) {
+          const c = document.createElement('div'); c.className = 'shoe-conf';
+          const y = document.createElement('button'); y.type = 'button'; y.className = 'yes'; y.id = 'zdel-yes-' + r.id; y.textContent = 'Quitar';
+          y.addEventListener('click', () => { delShoe = null; saveShoes(ZAPAS.filter((z) => z.id !== r.id)); });
+          const no = document.createElement('button'); no.type = 'button'; no.id = 'zdel-no-' + r.id; no.textContent = 'No';
+          no.addEventListener('click', () => { delShoe = null; renderShoes(); });
+          c.append(y, no); row.appendChild(c);
+        } else {
+          const x = document.createElement('button'); x.type = 'button'; x.className = 'shoe-del'; x.id = 'zdel-' + r.id; x.textContent = '×'; x.setAttribute('aria-label', 'Quitar ' + r.name);
+          x.addEventListener('click', () => { delShoe = r.id; renderShoes(); const f = document.getElementById('zdel-no-' + r.id); if (f) f.focus(); });
+          row.appendChild(x);
+        }
+      } else row.appendChild(document.createElement('span'));
+      host.appendChild(row);
+    });
+  }
+  async function saveShoes(lista) {
+    ZAPAS = lista; render();
+    if (!db || readOnly) return;
+    try { await db.doc('config/zapatillas').set({ lista }); toast(); } catch (e) { if (e && e.code === 'invalid_argument') { readOnly = true; render(); } }
+  }
+  $('shoe-form').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const name = $('zn-name').value.trim(); if (!name) return;
+    const id = name.toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 20) + '-' + Date.now().toString(36);
+    const km = num($('zn-km').value);
+    saveShoes(ZAPAS.concat([{ id, name, color: $('zn-color').value, km_inicio: km != null ? Math.max(0, km) : 0 }]));
+    $('zn-name').value = ''; $('zn-km').value = '';
+  });
+  function renderGeneral() {
+    renderShoes();
+    const rows = months().map((m) => { const s = summary(all.filter((d) => d.fecha.startsWith(m)));
+      return { m, label: MSHORT(m), km: Math.round(s.km * 10) / 10, plan: s.kmPlan, gym: Math.round(s.gymMin / 6) / 10, padel: Math.round(s.padelMin / 6) / 10, s }; });
+    barsChart($('ch-meses'), rows, [{ key: 'plan', color: 'var(--plan)' }, { key: 'km', color: 'var(--accent)' }], 'km');
+    barsChart($('ch-horas'), rows, [{ key: 'gym', color: 'var(--accent)' }, { key: 'padel', color: 'var(--warn)' }], 'h');
+    const tb = $('tbl-meses').tBodies[0]; tb.replaceChildren();
+    const curM = todayStr.slice(0, 7);
+    rows.forEach((r) => { const s = r.s; const tr = document.createElement('tr'); if (r.m === curM) tr.className = 'cur';
+      [MONTH(r.m), nf(r.km), nf(r.plan), nf(r.gym), nf(r.padel),
+       s.pasos.length ? nf(Math.round(s.pasos.reduce((a, b) => a + b, 0) / s.pasos.length), 0) : '–', String(s.k10),
+       s.past ? Math.round(s.done / s.past * 100) + '%' : '–', s.dolor == null ? '–' : nf(s.dolor), s.peso == null ? '–' : nf(s.peso)]
+        .forEach((v) => { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); });
+      tb.appendChild(tr); });
+  }
+  function renderGym() {
+    const host = $('gym-list'); const focusId = document.activeElement && document.activeElement.id;
+    host.replaceChildren();
+    if (!ejs.length) { const e = document.createElement('div'); e.className = 'empty'; e.textContent = 'Todavía no hay ejercicios. Pídemelos y aparecerán aquí.'; host.appendChild(e); return; }
+    ejs.forEach((e, i) => {
+      const c = document.createElement('article'); c.className = 'panel ej';
+      const n = document.createElement('div'); n.className = 'n'; n.textContent = i + 1;
+      const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = e.nombre;
+      const sr = document.createElement('span'); sr.className = 'sr'; sr.textContent = e.series; nm.appendChild(sr);
+      const cl = document.createElement('div'); cl.className = 'cl'; cl.textContent = e.clave || '';
+      const pr = document.createElement('div'); pr.className = 'pr'; pr.textContent = e.progresion ? 'Siguiente paso: ' + e.progresion : '';
+      const fs = document.createElement('div'); fs.className = 'fields';
+      if (e.usa_carga) {
+        const w = document.createElement('label'); w.className = 'fld';
+        const sp = document.createElement('span'); sp.textContent = 'Carga kg';
+        const inp = document.createElement('input'); inp.type = 'number'; inp.inputMode = 'decimal'; inp.min = 0; inp.step = 0.5; inp.id = 'carga-' + e.id; inp.value = e.carga ?? ''; inp.disabled = readOnly;
+        inp.addEventListener('change', () => saveEj(e.id, { carga: num(inp.value) }));
+        w.append(sp, inp); fs.appendChild(w);
+      }
+      const w2 = document.createElement('label'); w2.className = 'fld'; w2.style.gridColumn = 'span 2';
+      const sp2 = document.createElement('span'); sp2.textContent = 'Nota';
+      const t = document.createElement('input'); t.type = 'text'; t.id = 'nota-' + e.id; t.value = e.nota || ''; t.placeholder = 'Cómo te ha ido, molestias…'; t.maxLength = 200; t.disabled = readOnly;
+      t.addEventListener('change', () => saveEj(e.id, { nota: t.value.trim() }));
+      w2.append(sp2, t); fs.appendChild(w2);
+      c.append(n, nm, cl, pr, fs); host.appendChild(c);
+    });
+    if (focusId) { const f = document.getElementById(focusId); if (f) f.focus(); }
+  }
+  async function saveEj(id, patch) {
+    const e = ejs.find((x) => x.id === id); if (e) Object.assign(e, patch);
+    if (!db || readOnly) return;
+    try { await db.doc('ejercicios/' + id).update(patch); toast(); } catch (err) { if (err && err.code === 'invalid_argument') { readOnly = true; renderGym(); } }
+  }
+  function render() {
+    renderTabs(); renderStats();
+    const gen = tab === 'general', gym = tab === 'gym';
+    $('v-gen').hidden = !gen; $('v-gym').hidden = !gym; $('v-mes').hidden = gen || gym; $('v-stats').hidden = gym;
+    if (gen) renderGeneral(); else if (gym) renderGym(); else { renderCharts(); renderDays(); }
+  }
+  let rT; window.addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(() => tab === 'general' ? renderGeneral() : tab === 'gym' ? null : renderCharts(), 150); });
+
+  (async () => {
+    db = window.claude ? await window.claude.use('db') : null;
+    if (!db) { $('dias').firstElementChild.textContent = 'No se ha podido abrir tu registro. Recarga la app.'; return; }
+    try { const u = await window.claude.use('user'); if (u && u.can && u.can('data.write') === false) readOnly = true; } catch (e) {}
+    db.doc('config/zapatillas').onSnapshot((snap) => {
+      const v = snap.data && snap.data();
+      ZAPAS = v && Array.isArray(v.lista) ? v.lista.filter((z) => z && z.id && z.name).map((z) => ({ id: String(z.id), name: String(z.name).slice(0, 20), color: /^#[0-9a-f]{6}$/i.test(z.color) ? z.color : '#888888', km_inicio: num(z.km_inicio) || 0 })) : [];
+      if (tab) render();
+    }, () => {});
+    db.collection('ejercicios').onSnapshot((snap) => {
+      ejs = snap.docs.map((d) => { const v = d.data() || {}; return { id: d.id, orden: num(v.orden) ?? 99, nombre: String(v.nombre || ''), series: String(v.series || ''), clave: v.clave, progresion: v.progresion, usa_carga: !!v.usa_carga, carga: num(v.carga), nota: v.nota }; })
+        .filter((e) => e.nombre).sort((a, b) => a.orden - b.orden);
+      if (tab === 'gym') renderGym();
+    }, () => {});
+    db.collection('dias').onSnapshot((snap) => {
+      all = snap.docs.map((s) => { const v = s.data() || {}; return { id: s.id, fecha: v.fecha, tipo: v.tipo, plan: v.plan, detalle: v.detalle, semana: v.semana,
+        km_plan: num(v.km_plan), min_plan: num(v.min_plan), hecho: v.hecho === true ? true : v.hecho === false ? false : null,
+        zapa: typeof v.zapa === 'string' ? v.zapa : null, km: num(v.km), min: num(v.min), pasos: num(v.pasos), dolor: num(v.dolor), peso: num(v.peso),
+        extras: Array.isArray(v.extras) ? v.extras.filter((e) => e && e.tipo).map((e) => ({ tipo: String(e.tipo), km: num(e.km), min: num(e.min), zapa: typeof e.zapa === 'string' ? e.zapa : null })) : [] }; })
+        .filter((d) => d.fecha).sort((a, b) => a.fecha < b.fecha ? -1 : 1);
+      const ms = tabMonths();
+      if (!tab || (tab !== 'general' && tab !== 'gym' && !ms.includes(tab))) {
+        let saved = null; try { saved = localStorage.getItem('tab'); } catch (e) {}
+        tab = saved && (saved === 'general' || saved === 'gym' || ms.includes(saved)) ? saved : ms.includes(todayStr.slice(0, 7)) ? todayStr.slice(0, 7) : (ms[0] || 'general');
+      }
+      applyTab();
+    }, () => { $('dias').replaceChildren(); const e = document.createElement('div'); e.className = 'empty'; e.textContent = 'No se ha podido cargar el registro. Recarga la página.'; $('dias').appendChild(e); });
+  })();
+})();
+</script>
+<link rel="stylesheet" href="app.css">
+<nav class="appnav" aria-label="Secciones de la app"><a href="index.html" aria-current="page"><span class="i" aria-hidden="true">🏃</span>Entreno</a><a href="comida.html"><span class="i" aria-hidden="true">🥗</span>Comida</a><a href="copia.html"><span class="i" aria-hidden="true">💾</span>Copia</a></nav>
+<script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}</script>
+</body></html>

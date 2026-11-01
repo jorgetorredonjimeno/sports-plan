@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="es"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sports Plan · Copia</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0e7c66">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sports Plan">
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+</head><body>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Figtree:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#f4f6f5;--panel:#fff;--fg:#17201d;--muted:#5d6a65;--line:#dbe2df;--accent:#0e7c66;--accent-soft:#d6efe8;--ok:#1f8a4c;--bad:#c8382b;--bad-soft:#fbe3e0}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0f1513;--panel:#18201d;--fg:#e7eeeb;--muted:#95a39e;--line:#2a3531;--accent:#3cc3a2;--accent-soft:#163a31;--ok:#4cc77d;--bad:#ff6b5e;--bad-soft:#3d1a17;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1513;--panel:#18201d;--fg:#e7eeeb;--muted:#95a39e;--line:#2a3531;--accent:#3cc3a2;--accent-soft:#163a31;--ok:#4cc77d;--bad:#ff6b5e;--bad-soft:#3d1a17;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 "Figtree",system-ui,-apple-system,sans-serif}
+.wrap{max-width:40rem;margin:0 auto;padding:20px max(16px,env(safe-area-inset-left,0px)) 32px;display:grid;gap:16px}
+h1{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:700;font-size:2.4rem;line-height:1;margin:0;text-transform:uppercase}
+h2{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:600;font-size:1.3rem;margin:0 0 6px;text-transform:uppercase;letter-spacing:.03em}
+p{margin:0 0 10px}.muted{color:var(--muted);font-size:.9rem}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:10px;padding:12px 18px;font:600 1rem "Figtree",system-ui,sans-serif;cursor:pointer;background:var(--accent);color:var(--bg);min-height:44px}
+.btn.ghost{background:transparent;color:var(--accent);border:1.5px solid var(--accent)}
+.btn.danger{background:var(--bad);color:#fff}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{box-sizing:border-box;line-height:1.2}
+.msg{font-size:.9rem;min-height:1.4em;margin-top:8px}
+.msg.ok{color:var(--ok)}.msg.bad{color:var(--bad)}
+.conf{display:none;margin-top:10px;padding:10px;border-radius:10px;background:var(--bad-soft)}
+.conf.on{display:block}
+</style>
+<div class="wrap">
+  <header>
+    <h1>Copia de seguridad</h1>
+    <p class="muted" style="margin-top:6px">Todo lo que apuntas se guarda solo en este móvil. Si cambias de móvil o borras los datos del navegador, se pierde. Haz una copia de vez en cuando (por ejemplo, cada domingo).</p>
+  </header>
+  <section class="panel">
+    <h2>Guardar una copia</h2>
+    <p>Crea un archivo con tus días, km, gym, zapatillas, gustos y menú. Guárdalo en Archivos, Drive o mándatelo por WhatsApp.</p>
+    <div class="row"><button class="btn" id="exp" type="button">💾 Guardar copia</button></div>
+    <p class="msg" id="m1" role="status"></p>
+  </section>
+  <section class="panel">
+    <h2>Recuperar una copia</h2>
+    <p>Elige un archivo de copia. Sustituye lo que hay ahora en este móvil.</p>
+    <div class="row"><label class="btn ghost" for="imp">📂 Elegir archivo</label><input type="file" id="imp" accept=".json,application/json" hidden></div>
+    <div class="conf" id="conf"><p id="conf-t"></p><div class="row"><button class="btn danger" id="ok" type="button">Sí, recuperar</button><button class="btn ghost" id="no" type="button">Cancelar</button></div></div>
+    <p class="msg" id="m2" role="status"></p>
+  </section>
+</div>
+<script>
+(function(){
+  const KEYS=['jdb','dj-gustos','dj-menu','dj-compra','dj-extra','tab'];
+  const $=(id)=>document.getElementById(id);
+  function snapshot(){const d={};KEYS.forEach(k=>{try{const v=localStorage.getItem(k);if(v!=null)d[k]=v}catch(e){}});return{app:'jorge',version:1,fecha:new Date().toISOString(),datos:d}}
+  $('exp').onclick=async()=>{
+    const fecha=new Date().toISOString().slice(0,10),name='copia-jorge-'+fecha+'.json';
+    const blob=new Blob([JSON.stringify(snapshot())],{type:'application/json'});
+    try{const f=new File([blob],name,{type:'application/json'});
+      if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'Copia de Jorge'});$('m1').className='msg ok';$('m1').textContent='Copia lista.';return}}catch(e){if(e&&e.name==='AbortError')return}
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
+    $('m1').className='msg ok';$('m1').textContent='Copia guardada como '+name+'.';
+  };
+  let pending=null;
+  $('imp').onchange=async()=>{
+    const f=$('imp').files[0];if(!f)return;$('m2').textContent='';
+    try{const j=JSON.parse(await f.text());if(!j||j.app!=='jorge'||!j.datos)throw 0;pending=j;
+      $('conf-t').textContent='¿Recuperar la copia del '+new Date(j.fecha).toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'})+'? Lo que hay ahora en este móvil se sustituye.';
+      $('conf').classList.add('on');$('ok').focus();
+    }catch(e){$('m2').className='msg bad';$('m2').textContent='Ese archivo no es una copia de esta app.'}
+    $('imp').value='';
+  };
+  $('no').onclick=()=>{pending=null;$('conf').classList.remove('on')};
+  $('ok').onclick=()=>{if(!pending)return;try{KEYS.forEach(k=>localStorage.removeItem(k));Object.entries(pending.datos).forEach(([k,v])=>{if(KEYS.includes(k))localStorage.setItem(k,v)});
+      $('conf').classList.remove('on');$('m2').className='msg ok';$('m2').textContent='Copia recuperada. Ya puedes ir a Entreno o Comida.';}catch(e){$('m2').className='msg bad';$('m2').textContent='No se ha podido recuperar.'}pending=null};
+})();
+</script>
+<link rel="stylesheet" href="app.css">
+<nav class="appnav" aria-label="Secciones de la app"><a href="index.html"><span class="i" aria-hidden="true">🏃</span>Entreno</a><a href="comida.html"><span class="i" aria-hidden="true">🥗</span>Comida</a><a href="copia.html" aria-current="page"><span class="i" aria-hidden="true">💾</span>Copia</a></nav>
+<script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}</script>
+</body></html>
