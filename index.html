@@ -184,13 +184,13 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0
     <div class="charts">
       <div class="panel">
         <h2>Km por mes</h2>
-        <p class="note">Lo corrido (extras incluidos) frente al plan de cada mes.</p>
+        <p class="note">Solo cuentan los días marcados con ✓ o ✗. Lo corrido (extras incluidos) frente a lo que tocaba esos días.</p>
         <div class="legend"><span><i style="background: var(--plan)"></i>Plan</span><span><i style="background: var(--accent)"></i>Real</span></div>
         <div class="chart" id="ch-meses"></div>
       </div>
       <div class="panel">
         <h2>Gym, pádel y bici por mes</h2>
-        <p class="note">Horas de cada mes.</p>
+        <p class="note">Horas de cada mes, solo de los días marcados.</p>
         <div class="legend"><span><i style="background: var(--accent)"></i>Gym</span><span><i style="background: var(--warn)"></i>Pádel</span><span><i style="background: #5b7fd6"></i>Bici</span></div>
         <div class="chart" id="ch-horas"></div>
       </div>
@@ -717,8 +717,9 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0
   }
   function renderGeneral() {
     renderShoes(); renderPeso();
-    const rows = months().map((m) => { const s = summary(all.filter((d) => d.fecha.startsWith(m)));
-      return { m, label: MSHORT(m), km: Math.round(s.km * 10) / 10, plan: s.kmPlan, gym: Math.round(s.gymMin / 6) / 10, padel: Math.round(s.padelMin / 6) / 10, bici: Math.round(s.biciMin / 6) / 10, s }; });
+    // Km y horas: solo cuentan los días ya marcados (✓ o ✗); los días sin marcar no suman.
+    const rows = months().map((m) => { const md = all.filter((d) => d.fecha.startsWith(m)), s = summary(md), c = summary(md.filter((d) => d.hecho != null));
+      return { m, label: MSHORT(m), km: Math.round(c.km * 10) / 10, plan: c.kmPlan, gym: Math.round(c.gymMin / 6) / 10, padel: Math.round(c.padelMin / 6) / 10, bici: Math.round(c.biciMin / 6) / 10, s }; });
     barsChart($('ch-meses'), rows, [{ key: 'plan', color: 'var(--plan)' }, { key: 'km', color: 'var(--accent)' }], 'km');
     barsChart($('ch-horas'), rows, [{ key: 'gym', color: 'var(--accent)' }, { key: 'padel', color: 'var(--warn)' }, { key: 'bici', color: '#5b7fd6' }], 'h');
     const tb = $('tbl-meses').tBodies[0]; tb.replaceChildren();
