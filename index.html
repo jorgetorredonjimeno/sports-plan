@@ -575,9 +575,23 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0
       creating[m] = 'done';
     } catch (e) { creating[m] = 'error'; renderDays(); }
   }
+  const isGym = () => location.hash === '#gym';
+  function pickRunTab() {
+    const ms = tabMonths(); let saved = null; try { saved = localStorage.getItem('tab'); } catch (e) {}
+    return saved && (saved === 'general' || ms.includes(saved)) ? saved : ms.includes(todayStr.slice(0, 7)) ? todayStr.slice(0, 7) : (ms[0] || 'general');
+  }
+  function syncMode() {
+    document.querySelectorAll('.appnav a').forEach((a) => {
+      const h = a.getAttribute('href'), cur = isGym() ? h === 'index.html#gym' : h === 'index.html';
+      if (cur) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+    });
+    $('tabs').hidden = isGym();
+  }
+  window.addEventListener('hashchange', () => { syncMode(); if (!all.length && !ejs.length) return; tab = isGym() ? 'gym' : pickRunTab(); applyTab(); window.scrollTo(0, 0); });
   function renderTabs() {
-    const nav = $('tabs'); nav.replaceChildren();
-    ['general', 'gym', ...tabMonths()].forEach((m) => {
+    const nav = $('tabs'); nav.replaceChildren(); syncMode();
+    if (isGym()) return;
+    ['general', ...tabMonths()].forEach((m) => {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'tab'; b.id = 'tab-' + m; b.setAttribute('role', 'tab');
       b.setAttribute('aria-selected', String(tab === m)); b.textContent = m === 'general' ? 'General' : m === 'gym' ? 'Gym' : MONTH(m).split(' ')[0] + (m.startsWith('2026') ? '' : ' ' + m.slice(2, 4));
       b.addEventListener('click', () => { tab = m; try { localStorage.setItem('tab', m); } catch (e) {} applyTab(); });
@@ -829,16 +843,14 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0
         extras: Array.isArray(v.extras) ? v.extras.filter((e) => e && e.tipo).map((e) => ({ tipo: String(e.tipo), km: num(e.km), min: num(e.min), zapa: typeof e.zapa === 'string' ? e.zapa : null })) : [] }; })
         .filter((d) => d.fecha).sort((a, b) => a.fecha < b.fecha ? -1 : 1);
       const ms = tabMonths();
-      if (!tab || (tab !== 'general' && tab !== 'gym' && !ms.includes(tab))) {
-        let saved = null; try { saved = localStorage.getItem('tab'); } catch (e) {}
-        tab = saved && (saved === 'general' || saved === 'gym' || ms.includes(saved)) ? saved : ms.includes(todayStr.slice(0, 7)) ? todayStr.slice(0, 7) : (ms[0] || 'general');
-      }
+      if (isGym()) tab = 'gym';
+      else if (!tab || tab === 'gym' || (tab !== 'general' && !ms.includes(tab))) tab = pickRunTab();
       applyTab();
     }, () => { $('dias').replaceChildren(); const e = document.createElement('div'); e.className = 'empty'; e.textContent = 'No se ha podido cargar el registro. Recarga la página.'; $('dias').appendChild(e); });
   })();
 })();
 </script>
 <link rel="stylesheet" href="app.css">
-<nav class="appnav" aria-label="Secciones de la app"><a href="index.html" aria-current="page"><span class="i" aria-hidden="true">🏃</span>Entreno</a><a href="comida.html"><span class="i" aria-hidden="true">🥗</span>Comida</a><a href="copia.html"><span class="i" aria-hidden="true">💾</span>Copia</a></nav>
+<nav class="appnav" aria-label="Secciones de la app"><a href="index.html" aria-current="page"><span class="i" aria-hidden="true">🏃</span>Running</a><a href="index.html#gym"><span class="i" aria-hidden="true">🏋️</span>Gym</a><a href="comida.html"><span class="i" aria-hidden="true">🥗</span>Comida</a><a href="copia.html"><span class="i" aria-hidden="true">💾</span>Copia</a></nav>
 <script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}</script>
 </body></html>
