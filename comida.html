@@ -57,6 +57,12 @@ main section.view{display:flex;flex-direction:column;gap:22px;padding-top:18px}
 .t{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 .t b{display:block;font-family:var(--f-display);font-weight:400;font-size:1.25rem;font-variant-numeric:tabular-nums}
 .t span{font-size:.76rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.targets.obj{grid-template-columns:1fr 1fr}
+.targets.obj .t{display:grid;gap:4px}
+.targets.obj .t:last-child{grid-column:auto}
+.t input{font:400 1.3rem var(--f-display);width:100%;box-sizing:border-box;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--sunk);color:var(--ink);font-variant-numeric:tabular-nums}
+.t input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.linkbtn.inl{font-size:.86rem;padding:0}
 @media (max-width:440px){.targets{grid-template-columns:1fr 1fr}.targets .t:last-child{grid-column:span 2}}
 
 /* food picker */
@@ -158,11 +164,11 @@ details.why ul{margin:10px 0 0;padding-left:18px;display:flex;flex-direction:col
   </section>
 
   <section class="view" id="v-menu" hidden>
-    <div class="targets">
-      <div class="t"><span>Días de correr y pádel</span><b>≈ 1.900 kcal</b></div>
-      <div class="t"><span>Días de descanso</span><b>≈ 1.600 kcal</b></div>
-      <div class="t"><span>Proteína diaria</span><b>110 g o más</b></div>
+    <div class="targets obj">
+      <label class="t"><span>Calorías al día</span><input id="oKcal" type="number" inputmode="numeric" min="1200" max="4500" step="50"></label>
+      <label class="t"><span>Proteína al día (g)</span><input id="oProt" type="number" inputmode="numeric" min="40" max="300" step="5"></label>
     </div>
+    <p class="sub" id="oHint" style="margin-top:-12px"></p>
     <ul class="warns" id="warns2"></ul>
     <div class="cta">
       <button class="btn" id="regen" type="button">Generar otra semana</button>
@@ -173,8 +179,8 @@ details.why ul{margin:10px 0 0;padding-left:18px;display:flex;flex-direction:col
       <summary>Por qué el menú está montado así</summary>
       <ul>
         <li>Déficit suave (unas 400 kcal) para bajar 0,3–0,5 kg por semana sin perder fuerza ni ritmo.</li>
-        <li>Proteína en todas las comidas para llegar a 110 g al día y proteger el músculo.</li>
-        <li>Más hidrato los días de correr y pádel, y en la cena del viernes antes de la tirada larga. Los días de descanso, menos.</li>
+        <li>Proteína en todas las comidas para proteger el músculo. Por defecto se calcula a 1,6 g por kg de peso.</li>
+        <li>Todos los días van a las mismas calorías y proteína que pongas arriba. Las cantidades de cada plato se ajustan solas para llegar.</li>
         <li>Pescado azul 3 veces por semana y legumbres 3–4 veces: omega-3 y fibra con efecto antiinflamatorio, que ayuda a la espalda.</li>
         <li>Carne roja como mucho 1 vez por semana. Aceite de oliva virgen extra como grasa principal.</li>
         <li>Las cantidades son en crudo y orientativas. Si tienes hambre real o el peso baja más de 0,7 kg por semana, sube un poco el hidrato.</li>
@@ -329,16 +335,34 @@ const DEFAULT=['pollo','pavo','lomo','ternera','salmon','sardinas','bonito','atu
 
 // ---------- Semana tipo (del plan de correr) ----------
 const DAYS=[
- {d:'L',n:'Lunes',act:'Correr 8 km',lvl:'alto',hc:1,hn:.5,tip:'Si corres por la mañana, desayuna 1–2 h antes. Si es por la tarde, la merienda va 60–90 min antes.'},
- {d:'M',n:'Martes',act:'Pádel',lvl:'alto',hc:1,hn:.5,tip:'Bebe bien durante el pádel. Después, la cena con proteína ayuda a recuperar.'},
- {d:'X',n:'Miércoles',act:'Descanso + caminar',lvl:'bajo',hc:.5,hn:0,tip:'Día de menos hidrato: llénate con verdura y proteína.'},
- {d:'J',n:'Jueves',act:'Gym core y espalda',lvl:'medio',hc:.75,hn:0,tip:'Proteína en la comida de después del gym.'},
- {d:'V',n:'Viernes',act:'Descanso + caminar',lvl:'medio',hc:.5,hn:.75,tip:'Mañana tirada larga: la cena lleva hidrato para llegar con el depósito lleno.'},
- {d:'S',n:'Sábado',act:'Tirada larga',lvl:'alto',hc:1,hn:.5,tip:'Desayuno ligero 1–2 h antes. Al volver, agua y proteína en la siguiente comida.'},
- {d:'D',n:'Domingo',act:'Descanso activo',lvl:'bajo',hc:.5,hn:0,tip:'Buen día para cocinar legumbres y verdura para la semana.'},
-];
-const LVL={alto:'Entreno',medio:'Moderado',bajo:'Descanso'};
-const TARGET={alto:1900,medio:1750,bajo:1600};
+ {d:'L',n:'Lunes'},{d:'M',n:'Martes'},{d:'X',n:'Miércoles'},{d:'J',n:'Jueves'},{d:'V',n:'Viernes'},{d:'S',n:'Sábado'},{d:'D',n:'Domingo'},
+].map(x=>Object.assign(x,{lvl:'alto',hc:1,hn:.5}));
+// ---------- Objetivo diario (calorías y proteína) ----------
+function pesoActual(){try{const s=JSON.parse(localStorage.getItem('jdb'))||{};const ps=Object.keys(s).filter(k=>k.startsWith('dias/')&&s[k]&&s[k].peso!=null).sort();
+  if(ps.length)return Number(s[ps[ps.length-1]].peso);const p=s['config/perfil'];return p&&p.peso?Number(p.peso):null}catch(e){return null}}
+let OBJ={kcal:1800,prot:null};try{Object.assign(OBJ,JSON.parse(localStorage.getItem('dj-obj'))||{})}catch(e){}
+function protAuto(){const w=pesoActual();return w?Math.round(w*1.6/5)*5:Math.round(OBJ.kcal*.25/4/5)*5}
+function protObj(){return OBJ.prot||protAuto()}
+// Ajusta las cantidades de un día para acercarse a las calorías y proteína elegidas.
+function scaled(dd){
+  const K=OBJ.kcal,P=protObj(),isFix=f=>f.id==='aove'||f.c==='ver',isProt=f=>f.p*4/f.k>=.25;
+  let kP=0,pP=0,kO=0,pO=0,kF=0,pF=0;
+  dd.meals.forEach(m=>m.items.forEach(([id,x])=>{const f=BY[id];if(!f)return;const k=f.k*x,p=f.p*x;
+    if(isFix(f)){kF+=k;pF+=p}else if(isProt(f)){kP+=k;pP+=p}else{kO+=k;pO+=p}}));
+  const cl=(v,a,b)=>Math.min(b,Math.max(a,v));let fp=1,fo=1;
+  const det=kP*pO-kO*pP;
+  if(kP>0&&kO>0&&Math.abs(det)>1e-6){fp=((K-kF)*pO-kO*(P-pF))/det;fo=(kP*(P-pF)-pP*(K-kF))/det}
+  if(!(fp>=.5&&fp<=2.2&&fo>=.3&&fo<=2.5)){fp=cl(pP?(P-pF-pO)/pP:1,.5,2.2);fo=cl(kO?(K-kF-kP*fp)/kO:1,.3,2.5)}
+  return dd.meals.map(m=>Object.assign({},m,{items:m.items.map(([id,x])=>{const f=BY[id];if(!f||isFix(f))return[id,x];return[id,x*(isProt(f)?fp:fo)]})}));
+}
+function renderObj(){
+  $('#oKcal').value=OBJ.kcal;$('#oProt').value=protObj();
+  const w=pesoActual();
+  $('#oHint').innerHTML=OBJ.prot?'Proteína puesta a mano. <button type="button" class="linkbtn inl" id="oAuto">Volver al cálculo automático</button>'
+    :(w?'Proteína calculada: 1,6 g por kg de tu peso ('+nf.format(w)+' kg). Puedes cambiarla.':'Proteína calculada: un 25 % de las calorías. Puedes cambiarla.');
+  const b=document.getElementById('oAuto');if(b)b.onclick=()=>{OBJ.prot=null;saveObj()};
+}
+function saveObj(){LS.set('dj-obj',OBJ);renderObj();renderMenu();renderShop()}
 const MEALN={des:'Desayuno',com:'Comida',mer:'Merienda',cen:'Cena'};
 
 // ---------- Estado ----------
@@ -514,10 +538,10 @@ const ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-wi
 function renderMenu(){
   const box=$('#days');box.innerHTML='';
   menu.dias.forEach((dd,di)=>{
-    const day=DAYS[di];let K=0,P=0;dd.meals.forEach(m=>{const t=mealTot(m);K+=t.k;P+=t.p});
+    const day=DAYS[di],meals=scaled(dd);let K=0,P=0;meals.forEach(m=>{const t=mealTot(m);K+=t.k;P+=t.p});
     const el=document.createElement('article');el.className='day';
     let h='<div class="day-head"><h3>'+day.n+'</h3><span class="tot"><b>≈ '+nf.format(Math.round(K/10)*10)+' kcal</b> · '+Math.round(P)+' g prot.</span></div>';
-    dd.meals.forEach((m,mi)=>{
+    meals.forEach((m,mi)=>{
       const t=mealTot(m),first=m.items[0];
       const main=first?itemTxt(first):'Marca más alimentos para completar esta comida';
       const rest=m.items.slice(1).filter(x=>!(x[0]==='aove'&&m.k!=='des')).map(itemTxt);
@@ -528,7 +552,6 @@ function renderMenu(){
         '<div class="k">≈ '+Math.round(t.k)+' kcal · '+Math.round(t.p)+' g prot.</div></div>'+
         '<button type="button" class="reroll" id="rr-'+di+'-'+mi+'" title="Cambiar esta comida" aria-label="Cambiar '+MEALN[m.k].toLowerCase()+' del '+day.n.toLowerCase()+'">'+ICON+'</button></div>';
     });
-    h+='<div class="tip">'+day.tip+'</div>';
     el.innerHTML=h;box.appendChild(el);
     el.querySelectorAll('.reroll').forEach(b=>{const [,a,c]=b.id.split('-');b.onclick=()=>reroll(+a,+c)});
   });
@@ -537,7 +560,7 @@ function renderMenu(){
 // ---------- Render: compra ----------
 let bought=new Set(LS.get('dj-compra')||[]);
 function renderShop(){
-  const tot={};menu.dias.forEach(dd=>dd.meals.forEach(m=>m.items.forEach(([id,x])=>{if(id!=='aove')tot[id]=(tot[id]||0)+x})));
+  const tot={};menu.dias.forEach(dd=>scaled(dd).forEach(m=>m.items.forEach(([id,x])=>{if(id!=='aove')tot[id]=(tot[id]||0)+x})));
   const box=$('#shop');box.innerHTML='';
   const ids=Object.keys(tot);if(!ids.length){box.innerHTML='<div class="empty">Marca alimentos en “Me gusta” para ver la lista.</div>';return}
   CATS.forEach(([c,name])=>{
@@ -555,6 +578,9 @@ function renderShop(){
 }
 $('#clearShop').onclick=()=>{bought.clear();LS.set('dj-compra',[]);renderShop()};
 $('#regen').onclick=()=>{newMenu();renderMenu();renderShop();saveMenu();setStatus('Semana nueva generada')};
+
+$('#oKcal').onchange=()=>{const v=Math.round(Number($('#oKcal').value));if(v>=1200&&v<=4500){OBJ.kcal=v;saveObj()}else renderObj()};
+$('#oProt').onchange=()=>{const v=Math.round(Number($('#oProt').value));if(v>=40&&v<=300){OBJ.prot=v===protAuto()&&!OBJ.prot?null:v;saveObj()}else renderObj()};
 
 // ---------- Vistas ----------
 function route(){const v=(location.hash||'#alimentos').slice(1);const ok=['alimentos','menu','compra'].includes(v)?v:'alimentos';
@@ -574,7 +600,7 @@ function menuResumen(){return menu.dias.map((dd,i)=>DAYS[i].n+': '+dd.meals.map(
 
 // ---------- Arranque ----------
 if(!menu)newMenu(20261102);
-renderCats();renderWarns();renderMenu();renderShop();route();
+renderObj();renderCats();renderWarns();renderMenu();renderShop();route();
 if(isExample)setStatus('Selección de ejemplo: cámbiala a tu gusto.');
 
 (async()=>{
