@@ -136,7 +136,7 @@ details.why ul{margin:10px 0 0;padding-left:18px;display:flex;flex-direction:col
 <header class="top">
   <div class="wrap">
     <div>
-      <h1 id="dtitle">Despensa de Jorge</h1>
+      <h1 id="dtitle">Mi despensa</h1>
       <script>try{const p=(JSON.parse(localStorage.getItem('jdb'))||{})['config/perfil'];if(p&&p.nombre)document.getElementById('dtitle').textContent='Despensa de '+p.nombre}catch(e){}</script>
       <p class="sub">Marca lo que te gusta y sale una semana de comidas para perder grasa sin perder piernas.</p>
     </div>
@@ -516,7 +516,7 @@ function renderMenu(){
   menu.dias.forEach((dd,di)=>{
     const day=DAYS[di];let K=0,P=0;dd.meals.forEach(m=>{const t=mealTot(m);K+=t.k;P+=t.p});
     const el=document.createElement('article');el.className='day';
-    let h='<div class="day-head"><h3>'+day.n+'</h3><span class="pill '+day.lvl+'">'+day.act+'</span><span class="tot"><b>≈ '+nf.format(Math.round(K/10)*10)+' kcal</b> · '+Math.round(P)+' g prot.</span></div>';
+    let h='<div class="day-head"><h3>'+day.n+'</h3><span class="tot"><b>≈ '+nf.format(Math.round(K/10)*10)+' kcal</b> · '+Math.round(P)+' g prot.</span></div>';
     dd.meals.forEach((m,mi)=>{
       const t=mealTot(m),first=m.items[0];
       const main=first?itemTxt(first):'Marca más alimentos para completar esta comida';
