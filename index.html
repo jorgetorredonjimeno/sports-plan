@@ -739,20 +739,18 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0
       const c = document.createElement('article'); c.className = 'panel';
       const t = document.createElement('h2'); t.textContent = e.nombre; t.style.textTransform = 'none'; t.style.fontSize = '1.15rem';
       const p = document.createElement('p'); p.className = 'note';
-      p.textContent = h.length < 2 ? 'Primer registro: ' + nf(a.kg) + ' kg el ' + fmtD(a.f) + '.' : 'Ahora ' + nf(z.kg) + ' kg. Empezaste con ' + nf(a.kg) + ' kg el ' + fmtD(a.f) + ' (' + (dif >= 0 ? '+' : '−') + nf(Math.abs(dif)) + ' kg).';
-      c.append(t, p);
-      if (h.length >= 2) {
-        const el = document.createElement('div'); el.className = 'chart'; c.appendChild(el); host.appendChild(c);
-        const W = Math.max(260, el.clientWidth || 300), H = 130, m = { t: 12, r: 12, b: 22, l: 36 };
-        const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Evolución de ' + e.nombre }, el);
-        const lo = Math.max(0, Math.floor(Math.min(...h.map((x) => x.kg)) - 2)), hi = Math.ceil(Math.max(...h.map((x) => x.kg)) + 2);
-        const x = (i) => m.l + i / (h.length - 1) * (W - m.l - m.r), y = (v) => m.t + (hi - v) / (hi - lo) * (H - m.t - m.b);
-        [lo, hi].forEach((v) => { svgEl('line', { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: 'var(--line)' }, svg);
-          svgEl('text', { x: m.l - 6, y: y(v) + 4, 'text-anchor': 'end' }, svg).textContent = nf(v); });
-        svgEl('path', { d: h.map((p, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ',' + y(p.kg).toFixed(1)).join(''), fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2.5, 'stroke-linejoin': 'round' }, svg);
-        h.forEach((p, i) => svgEl('circle', { cx: x(i), cy: y(p.kg), r: 3.5, fill: 'var(--accent)' }, svg));
-        [0, h.length - 1].forEach((i) => svgEl('text', { x: x(i), y: H - 5, 'text-anchor': i ? 'end' : 'start' }, svg).textContent = fmtD(h[i].f));
-      } else host.appendChild(c);
+      p.textContent = h.length < 2 ? 'Primer registro. La próxima vez que apuntes verás la línea de progreso.' : 'Ahora ' + nf(z.kg) + ' kg. Empezaste con ' + nf(a.kg) + ' kg el ' + fmtD(a.f) + ' (' + (dif >= 0 ? '+' : '−') + nf(Math.abs(dif)) + ' kg).';
+      const el = document.createElement('div'); el.className = 'chart'; c.append(t, el, p); host.appendChild(c);
+      const W = Math.max(260, el.clientWidth || 300), H = 140, m = { t: 14, r: 16, b: 22, l: 36 };
+      const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Evolución de ' + e.nombre }, el);
+      const lo = Math.max(0, Math.floor(Math.min(...h.map((x) => x.kg)) - 2)), hi = Math.ceil(Math.max(...h.map((x) => x.kg)) + 2);
+      const x = (i) => h.length < 2 ? (m.l + W - m.r) / 2 : m.l + i / (h.length - 1) * (W - m.l - m.r), y = (v) => m.t + (hi - v) / (hi - lo) * (H - m.t - m.b);
+      [lo, (lo + hi) / 2, hi].forEach((v) => { svgEl('line', { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: 'var(--line)' }, svg);
+        svgEl('text', { x: m.l - 6, y: y(v) + 4, 'text-anchor': 'end' }, svg).textContent = nf(v); });
+      if (h.length >= 2) svgEl('path', { d: h.map((q, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ',' + y(q.kg).toFixed(1)).join(''), fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2.5, 'stroke-linejoin': 'round' }, svg);
+      h.forEach((q, i) => svgEl('circle', { cx: x(i), cy: y(q.kg), r: 4, fill: 'var(--accent)' }, svg));
+      const lz = svgEl('text', { x: Math.min(x(h.length - 1), W - m.r), y: y(z.kg) - 9, 'text-anchor': h.length < 2 ? 'middle' : 'end' }, svg); lz.textContent = nf(z.kg) + ' kg'; lz.style.fill = 'var(--fg)';
+      (h.length < 2 ? [0] : [0, h.length - 1]).forEach((i) => svgEl('text', { x: x(i), y: H - 5, 'text-anchor': h.length < 2 ? 'middle' : i ? 'end' : 'start' }, svg).textContent = fmtD(h[i].f));
     });
   }
   function renderGym() {

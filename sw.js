@@ -1,5 +1,5 @@
 // Guarda la app en el móvil para que abra sin conexión.
-const CACHE = 'sports-v9';
+const CACHE = 'sports-v10';
 const FILES = ['./', './index.html', './comida.html', './copia.html', './bienvenida.html', './plan.js', './app.css', './db.js', './seed.js', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-180.png'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener('activate', (e) => {
