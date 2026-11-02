@@ -229,7 +229,9 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0
         <li>10 puentes de glúteo rápidos, sin pausa.</li>
       </ul>
     </div>
+    <nav class="tabs" id="gym-g" role="tablist" aria-label="Grupos de ejercicios" style="margin-top:12px"></nav>
     <div class="gymlist" id="gym-list"><div class="empty">Cargando tu rutina…</div></div>
+    <div class="gymlist" id="gym-prog" hidden></div>
     <div class="panel" style="margin-top: 12px">
       <h2>Evitar de momento</h2>
       <ul class="list no">
@@ -714,11 +716,55 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0
         .forEach((v) => { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); });
       tb.appendChild(tr); });
   }
+  const GRUPOS = { espalda: 'Espalda y core', pierna: 'Pierna', pecho: 'Pecho y hombro', prog: '📈 Progreso' };
+  const DEFG = { 'zancada-estatica': 'pierna', gemelos: 'pierna' };
+  let gymG = 'espalda'; try { gymG = localStorage.getItem('gymg') || 'espalda'; } catch (e) {}
+  if (!GRUPOS[gymG]) gymG = 'espalda';
+  function renderGymNav() {
+    const nav = $('gym-g'); nav.replaceChildren();
+    Object.entries(GRUPOS).forEach(([k, v]) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'tab'; b.id = 'gg-' + k; b.setAttribute('role', 'tab');
+      b.setAttribute('aria-selected', String(gymG === k)); b.textContent = v; b.style.textTransform = 'none';
+      b.addEventListener('click', () => { gymG = k; try { localStorage.setItem('gymg', k); } catch (e) {} renderGym(); });
+      nav.appendChild(b);
+    });
+  }
+  function renderProg() {
+    const host = $('gym-prog'); host.replaceChildren();
+    const list = ejs.filter((e) => e.usa_carga && e.historial.length);
+    if (!list.length) { const e = document.createElement('div'); e.className = 'empty'; e.textContent = 'Apunta los kg en cada ejercicio y aquí verás cómo vas subiendo.'; host.appendChild(e); return; }
+    const fmtD = (f) => Number(f.slice(8)) + ' ' + MSHORT(f.slice(0, 7));
+    list.forEach((e) => {
+      const h = e.historial, a = h[0], z = h[h.length - 1], dif = Math.round((z.kg - a.kg) * 10) / 10;
+      const c = document.createElement('article'); c.className = 'panel';
+      const t = document.createElement('h2'); t.textContent = e.nombre; t.style.textTransform = 'none'; t.style.fontSize = '1.15rem';
+      const p = document.createElement('p'); p.className = 'note';
+      p.textContent = h.length < 2 ? 'Primer registro: ' + nf(a.kg) + ' kg el ' + fmtD(a.f) + '.' : 'Ahora ' + nf(z.kg) + ' kg. Empezaste con ' + nf(a.kg) + ' kg el ' + fmtD(a.f) + ' (' + (dif >= 0 ? '+' : '−') + nf(Math.abs(dif)) + ' kg).';
+      c.append(t, p);
+      if (h.length >= 2) {
+        const el = document.createElement('div'); el.className = 'chart'; c.appendChild(el); host.appendChild(c);
+        const W = Math.max(260, el.clientWidth || 300), H = 130, m = { t: 12, r: 12, b: 22, l: 36 };
+        const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Evolución de ' + e.nombre }, el);
+        const lo = Math.max(0, Math.floor(Math.min(...h.map((x) => x.kg)) - 2)), hi = Math.ceil(Math.max(...h.map((x) => x.kg)) + 2);
+        const x = (i) => m.l + i / (h.length - 1) * (W - m.l - m.r), y = (v) => m.t + (hi - v) / (hi - lo) * (H - m.t - m.b);
+        [lo, hi].forEach((v) => { svgEl('line', { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: 'var(--line)' }, svg);
+          svgEl('text', { x: m.l - 6, y: y(v) + 4, 'text-anchor': 'end' }, svg).textContent = nf(v); });
+        svgEl('path', { d: h.map((p, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ',' + y(p.kg).toFixed(1)).join(''), fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2.5, 'stroke-linejoin': 'round' }, svg);
+        h.forEach((p, i) => svgEl('circle', { cx: x(i), cy: y(p.kg), r: 3.5, fill: 'var(--accent)' }, svg));
+        [0, h.length - 1].forEach((i) => svgEl('text', { x: x(i), y: H - 5, 'text-anchor': i ? 'end' : 'start' }, svg).textContent = fmtD(h[i].f));
+      } else host.appendChild(c);
+    });
+  }
   function renderGym() {
+    renderGymNav();
+    const prog = gymG === 'prog';
+    $('gym-list').hidden = prog; $('gym-prog').hidden = !prog;
+    if (prog) { renderProg(); return; }
     const host = $('gym-list'); const focusId = document.activeElement && document.activeElement.id;
     host.replaceChildren();
-    if (!ejs.length) { const e = document.createElement('div'); e.className = 'empty'; e.textContent = 'Todavía no hay ejercicios. Pídemelos y aparecerán aquí.'; host.appendChild(e); return; }
-    ejs.forEach((e, i) => {
+    const lista = ejs.filter((e) => e.grupo === gymG);
+    if (!lista.length) { const e = document.createElement('div'); e.className = 'empty'; e.textContent = 'Todavía no hay ejercicios en este grupo. Pídemelos y aparecerán aquí.'; host.appendChild(e); return; }
+    lista.forEach((e, i) => {
       const c = document.createElement('article'); c.className = 'panel ej';
       const n = document.createElement('div'); n.className = 'n'; n.textContent = i + 1;
       const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = e.nombre;
@@ -728,10 +774,17 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0
       const fs = document.createElement('div'); fs.className = 'fields';
       if (e.usa_carga) {
         const w = document.createElement('label'); w.className = 'fld';
-        const sp = document.createElement('span'); sp.textContent = 'Carga kg';
+        const sp = document.createElement('span'); sp.textContent = 'Kg de hoy';
         const inp = document.createElement('input'); inp.type = 'number'; inp.inputMode = 'decimal'; inp.min = 0; inp.step = 0.5; inp.id = 'carga-' + e.id; inp.value = e.carga ?? ''; inp.disabled = readOnly;
-        inp.addEventListener('change', () => saveEj(e.id, { carga: num(inp.value) }));
+        inp.addEventListener('change', () => {
+          const v = num(inp.value), h = e.historial.filter((x) => x.f !== todayStr);
+          if (v != null) h.push({ f: todayStr, kg: v });
+          h.sort((a, b) => a.f < b.f ? -1 : 1);
+          saveEj(e.id, { carga: v, historial: h });
+        });
         w.append(sp, inp); fs.appendChild(w);
+        const last = e.historial.filter((x) => x.f !== todayStr).slice(-1)[0];
+        if (last) { const lp = document.createElement('div'); lp.className = 'pr'; lp.style.gridColumn = '1 / -1'; lp.textContent = 'Última vez: ' + nf(last.kg) + ' kg (' + Number(last.f.slice(8)) + ' ' + MSHORT(last.f.slice(0, 7)) + ')'; fs.appendChild(lp); }
       }
       const w2 = document.createElement('label'); w2.className = 'fld'; w2.style.gridColumn = 'span 2';
       const sp2 = document.createElement('span'); sp2.textContent = 'Nota';
@@ -765,7 +818,9 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0
       if (tab) render();
     }, () => {});
     db.collection('ejercicios').onSnapshot((snap) => {
-      ejs = snap.docs.map((d) => { const v = d.data() || {}; return { id: d.id, orden: num(v.orden) ?? 99, nombre: String(v.nombre || ''), series: String(v.series || ''), clave: v.clave, progresion: v.progresion, usa_carga: !!v.usa_carga, carga: num(v.carga), nota: v.nota }; })
+      ejs = snap.docs.map((d) => { const v = d.data() || {}; return { id: d.id, orden: num(v.orden) ?? 99, nombre: String(v.nombre || ''), series: String(v.series || ''), clave: v.clave, progresion: v.progresion, usa_carga: !!v.usa_carga, carga: num(v.carga), nota: v.nota,
+        grupo: GRUPOS[v.grupo] && v.grupo !== 'prog' ? v.grupo : (DEFG[d.id] || 'espalda'),
+        historial: Array.isArray(v.historial) ? v.historial.filter((x) => x && typeof x.f === 'string' && num(x.kg) != null).map((x) => ({ f: x.f, kg: num(x.kg) })) : [] }; })
         .filter((e) => e.nombre).sort((a, b) => a.orden - b.orden);
       if (tab === 'gym') renderGym();
     }, () => {});

@@ -9,6 +9,11 @@
     if (!store || typeof store !== 'object') {
       store = JSON.parse(JSON.stringify(window.SEED || {}));
       persist();
+    } else {
+      // Ejercicios nuevos del catálogo: se añaden sin tocar los que ya tienes.
+      let ch = false;
+      Object.keys(window.SEED || {}).forEach((k) => { if (k.startsWith('ejercicios/') && !store[k]) { store[k] = JSON.parse(JSON.stringify(window.SEED[k])); ch = true; } });
+      if (ch) persist();
     }
     return store;
   }
