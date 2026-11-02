@@ -852,5 +852,5 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0
 </script>
 <link rel="stylesheet" href="app.css">
 <nav class="appnav" aria-label="Secciones de la app"><a href="index.html" aria-current="page"><span class="i" aria-hidden="true">🏃</span>Running</a><a href="index.html#gym"><span class="i" aria-hidden="true">🏋️</span>Gym</a><a href="comida.html"><span class="i" aria-hidden="true">🥗</span>Comida</a><a href="copia.html"><span class="i" aria-hidden="true">💾</span>Copia</a></nav>
-<script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}</script>
+<script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(()=>{}))}</script>
 </body></html>

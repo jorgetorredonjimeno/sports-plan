@@ -1,5 +1,5 @@
 // Guarda la app en el móvil para que abra sin conexión.
-const CACHE = 'sports-v11';
+const CACHE = 'sports-v12';
 const FILES = ['./', './index.html', './comida.html', './copia.html', './bienvenida.html', './plan.js', './app.css', './db.js', './seed.js', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-180.png'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener('activate', (e) => {
@@ -8,7 +8,10 @@ self.addEventListener('activate', (e) => {
 // Primero la red (para recibir mejoras), y si no hay conexión, lo guardado.
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
-  e.respondWith(fetch(e.request).then((r) => {
+  // Para los archivos de la app, preguntar siempre al servidor si hay versión nueva (sin caché del navegador).
+  const own = new URL(e.request.url).origin === self.location.origin;
+  const net = own ? fetch(e.request.url, { cache: 'no-cache', credentials: 'same-origin' }) : fetch(e.request);
+  e.respondWith(net.then((r) => {
     if (r && (r.ok || r.type === 'opaque')) { const copy = r.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy)); }
     return r;
   }).catch(() => caches.match(e.request, { ignoreSearch: true }).then((m) => m || caches.match('./index.html'))));

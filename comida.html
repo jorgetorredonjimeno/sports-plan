@@ -592,5 +592,5 @@ if(isExample)setStatus('Selección de ejemplo: cámbiala a tu gusto.');
 </script>
 <link rel="stylesheet" href="app.css">
 <nav class="appnav" aria-label="Secciones de la app"><a href="index.html"><span class="i" aria-hidden="true">🏃</span>Running</a><a href="index.html#gym"><span class="i" aria-hidden="true">🏋️</span>Gym</a><a href="comida.html" aria-current="page"><span class="i" aria-hidden="true">🥗</span>Comida</a><a href="copia.html"><span class="i" aria-hidden="true">💾</span>Copia</a></nav>
-<script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}</script>
+<script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(()=>{}))}</script>
 </body></html>
